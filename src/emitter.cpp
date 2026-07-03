@@ -114,44 +114,47 @@ const std::string& Emitter::c_str() const {
 bool Emitter::needs_quotes(const std::string& value) const {
     if (value.empty()) return true;
 
-    // YAML indicators that require quoting
-    const char* special_starts = "&*!|>?'\"%@`";
-    if (value[0] == '-' && (value.size() == 1 || value[1] == ' ' || value[1] == '\t')) {
+    // Fast path: check first char for common indicators
+    char first = value[0];
+    if (first == '#' || first == '[' || first == ']' || first == '{' || first == '}'
+        || first == ',' || first == '!' || first == '&' || first == '*'
+        || first == '|' || first == '>' || first == '\'' || first == '"'
+        || first == '%' || first == '@' || first == '`')
         return true;
-    }
-    if (value[0] == ':' && (value.size() == 1 || value[1] == ' ' || value[1] == '\t')) {
-        return true;
-    }
-    if (value[0] == '#') return true;
-    if (value[0] == '[' || value[0] == ']' || value[0] == '{' || value[0] == '}') {
-        return true;
-    }
-    if (value[0] == ',') return true;
 
     // Check special prefixes
-    if (value.size() >= 3 && value.substr(0, 3) == "---") return true;
-    if (value.size() >= 3 && value.substr(0, 3) == "...") return true;
-    if (value.size() >= 4 && value.substr(0, 4) == "true") return true;
-    if (value.size() >= 5 && value.substr(0, 5) == "false") return true;
-    if (value.size() >= 3 && (value == "yes" || value == "no" || value == "on" || value == "off")) return true;
-    if (value.size() >= 4 && (value.substr(0, 4) == "null" || value.substr(0, 4) == "Null" || value.substr(0, 4) == "NULL")) return true;
-    if (value == "~") return true;
-    if (value == ".inf" || value == ".Inf" || value == ".INF") return true;
-    if (value == ".nan" || value == ".NaN" || value == ".NAN") return true;
+    if (value.size() >= 3 && value[0] == '-' && value[1] == '-' && value[2] == '-')
+        return true;
+    if (value.size() >= 3 && value[0] == '.' && value[1] == '.' && value[2] == '.')
+        return true;
 
-    // Check for special characters
+    // Boolean/null keywords (only if whole string matches)
+    if (value == "true" || value == "True" || value == "TRUE"
+        || value == "false" || value == "False" || value == "FALSE"
+        || value == "yes" || value == "Yes" || value == "YES"
+        || value == "no" || value == "No" || value == "NO"
+        || value == "on" || value == "On" || value == "ON"
+        || value == "off" || value == "Off" || value == "OFF"
+        || value == "null" || value == "Null" || value == "NULL"
+        || value == "~"
+        || value == ".inf" || value == ".Inf" || value == ".INF"
+        || value == ".nan" || value == ".NaN" || value == ".NAN")
+        return true;
+
+    // Check for leading/trailing whitespace
+    if (first == ' ' || value.back() == ' ') return true;
+
+    // Check for special newline/escape characters
     for (char c : value) {
         if (c == '\n' || c == '\r' || c == '\x1B') return true;
     }
-
-    // Check for leading/trailing whitespace
-    if (!value.empty() && (value.front() == ' ' || value.back() == ' ')) return true;
 
     return false;
 }
 
 std::string Emitter::escape_string(const std::string& value) const {
     std::string result;
+    result.reserve(value.size() + 8);  // pre-reserve for quotes + escapes
     result += '"';
     for (char c : value) {
         switch (c) {

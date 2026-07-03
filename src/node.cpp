@@ -140,8 +140,6 @@ Node Node::operator[](const std::string& key) const {
 
 void Node::remove(const std::string& key) {
     if (!data_ || data_->type_ != NodeType::Map) return;
-    // Remove from hash index (already done in map_remove) and vector
-    data_->map_index_.erase(key);
     for (auto it = data_->map_.begin(); it != data_->map_.end(); ++it) {
         if (it->first && it->first->type_ == NodeType::Scalar && it->first->scalar_ == key) {
             data_->map_.erase(it);
