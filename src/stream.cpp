@@ -113,4 +113,15 @@ char Stream::look_ahead(size_t offset) {
     return buffer_[idx];
 }
 
+std::string_view Stream::current_segment() const {
+    if (pos_ >= buffer_.size()) return {};
+    return std::string_view(buffer_.data() + pos_, buffer_.size() - pos_);
+}
+
+void Stream::advance(size_t n) {
+    pos_ += n;
+    mark_.column += static_cast<int>(n);
+    mark_.pos += static_cast<int>(n);
+}
+
 } // namespace YAML

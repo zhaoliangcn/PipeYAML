@@ -12,14 +12,20 @@ namespace YAML {
 // ---------------------------------------------------------------------------
 bool convert<bool>::decode(const Node& node, bool& value) {
     if (!node.is_scalar()) return false;
-    const auto& s = node.scalar();
+    auto data = node.get_data();
+    if (!data) return false;
+    if (data->cached_bool_.has_value()) {
+        value = data->cached_bool_.value();
+        return true;
+    }
+    const auto& s = data->scalar();
 
     // YAML 1.2 boolean values
     if (s == "true" || s == "True" || s == "TRUE" || s == "yes" || s == "Yes" || s == "YES" || s == "on" || s == "On" || s == "ON") {
-        value = true; return true;
+        value = true; data->cached_bool_ = true; return true;
     }
     if (s == "false" || s == "False" || s == "FALSE" || s == "no" || s == "No" || s == "NO" || s == "off" || s == "Off" || s == "OFF") {
-        value = false; return true;
+        value = false; data->cached_bool_ = false; return true;
     }
     return false;
 }
@@ -34,13 +40,20 @@ bool convert<bool>::encode(bool value, Node& node) {
 // ---------------------------------------------------------------------------
 bool convert<int>::decode(const Node& node, int& value) {
     if (!node.is_scalar()) return false;
-    const auto& s = node.scalar();
+    auto data = node.get_data();
+    if (!data) return false;
+    if (data->cached_int_.has_value()) {
+        value = data->cached_int_.value();
+        return true;
+    }
+    const auto& s = data->scalar();
     char* end = nullptr;
     long v = std::strtol(s.c_str(), &end, 0);
     if (end == s.c_str() || *end != '\0') return false;
     if (v < static_cast<long>(std::numeric_limits<int>::min()) ||
         v > static_cast<long>(std::numeric_limits<int>::max())) return false;
     value = static_cast<int>(v);
+    data->cached_int_ = value;
     return true;
 }
 
@@ -160,13 +173,23 @@ bool convert<float>::encode(float value, Node& node) {
 // ---------------------------------------------------------------------------
 bool convert<double>::decode(const Node& node, double& value) {
     if (!node.is_scalar()) return false;
-    const auto& s = node.scalar();
-    if (s == ".inf" || s == ".Inf" || s == ".INF") { value = std::numeric_limits<double>::infinity(); return true; }
-    if (s == "-.inf" || s == "-.Inf" || s == "-.INF") { value = -std::numeric_limits<double>::infinity(); return true; }
-    if (s == ".nan" || s == ".NaN" || s == ".NAN") { value = std::numeric_limits<double>::quiet_NaN(); return true; }
+    auto data = node.get_data();
+    if (!data) return false;
+    if (data->cached_double_.has_value()) {
+        value = data->cached_double_.value();
+        return true;
+    }
+    const auto& s = data->scalar();
+    if (s == ".inf" || s == ".Inf" || s == ".INF") { value = std::numeric_limits<double>::infinity(); data->cached_double_ = value; return true; }
+    if (s == "-.inf" || s == "-.Inf" || s == "-.INF") { value = -std::numeric_limits<double>::infinity(); data->cached_double_ = value; return true; }
+    if (s == ".nan" || s == ".NaN" || s == ".NAN") { value = std::numeric_limits<double>::quiet_NaN(); data->cached_double_ = value; return true; }
     char* end = nullptr;
     value = std::strtod(s.c_str(), &end);
-    return end != s.c_str() && *end == '\0';
+    if (end != s.c_str() && *end == '\0') {
+        data->cached_double_ = value;
+        return true;
+    }
+    return false;
 }
 
 bool convert<double>::encode(double value, Node& node) {

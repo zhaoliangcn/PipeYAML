@@ -5,7 +5,6 @@
 #include "node.h"
 
 #include <ostream>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -140,7 +139,7 @@ private:
     std::string null_format_ = "null";
     bool has_error_ = false;
     std::string last_error_;
-    std::ostringstream output_;
+    std::string output_;          // direct string buffer (was ostringstream)
     bool needs_separator_ = false;
 };
 

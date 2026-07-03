@@ -5,6 +5,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <optional>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
@@ -47,6 +48,11 @@ struct node_data {
     std::vector<MapPair> map_;
     std::vector<MapPair> undefined_pairs_;
 
+    // Cached converted values for fast repeated access
+    mutable std::optional<int> cached_int_;
+    mutable std::optional<double> cached_double_;
+    mutable std::optional<bool> cached_bool_;
+
     node_data() = default;
     explicit node_data(NodeType t, bool defined = true)
         : type_(t), is_defined_(defined) {}
@@ -57,6 +63,9 @@ struct node_data {
         type_ = NodeType::Scalar;
         is_defined_ = true;
         scalar_ = val;
+        cached_int_.reset();
+        cached_double_.reset();
+        cached_bool_.reset();
     }
 
     // Sequence access

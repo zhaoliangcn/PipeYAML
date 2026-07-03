@@ -58,22 +58,22 @@ void Scanner::ensure_tokens_in_queue() {
 // ===========================================================================
 int Scanner::read_indent() {
     int indent = 0;
-    while (true) {
-        char c = stream_.peek();
+    auto seg = stream_.current_segment();
+    for (char c : seg) {
         if (c == ' ') {
             indent++;
-            stream_.get();
         } else if (c == '\t') {
             // YAML forbids tabs for indentation
             throw ScannerException("Tab characters are not allowed for indentation",
                                    stream_.get_mark());
         } else if (c == '\r') {
             // Carriage return - skip (handled as part of newline)
-            stream_.get();
+            indent++;
         } else {
             break;
         }
     }
+    stream_.advance(indent);
     return indent;
 }
 
@@ -81,9 +81,15 @@ int Scanner::read_indent() {
 // Main scan dispatcher
 // ===========================================================================
 void Scanner::scan_next_token() {
-    // Skip whitespace (except newlines)
-    while (is_whitespace(stream_.peek())) {
-        stream_.get();
+    // Skip whitespace (except newlines) - batch mode
+    {
+        auto seg = stream_.current_segment();
+        size_t n = 0;
+        for (char c : seg) {
+            if (c == ' ' || c == '\t') n++;
+            else break;
+        }
+        if (n > 0) stream_.advance(n);
     }
 
     char c = stream_.peek();
@@ -230,20 +236,24 @@ void Scanner::scan_anchor_or_alias() {
     auto mark = stream_.get_mark();
     char prefix = stream_.get(); // '&' or '*'
 
-    std::string name;
-    while (true) {
-        char c = stream_.peek();
+    // Batch-read the name
+    auto seg = stream_.current_segment();
+    size_t n = 0;
+    for (char c : seg) {
         if (std::isalnum(static_cast<unsigned char>(c)) || c == '-' || c == '_'
             || c == '.' || c == '/') {
-            name += stream_.get();
+            n++;
         } else {
             break;
         }
     }
 
-    if (name.empty()) {
+    if (n == 0) {
         throw ScannerException("Empty anchor/alias name", mark);
     }
+
+    std::string name(seg.data(), n);
+    stream_.advance(n);
 
     TokenType type = (prefix == '&') ? TokenType::Anchor : TokenType::Alias;
     push_token(type, mark, name);
@@ -327,28 +337,44 @@ void Scanner::scan_scalar() {
             }
         }
     } else {
-        // Unquoted scalar - read until delimiter
-        while (true) {
-            c = stream_.peek();
-            // Delimiters for unquoted scalars
-            if (c == '\0' || stream_.eof() || c == '\n' || c == '\r'
-                || c == '#' || c == '[' || c == ']' || c == '{' || c == '}'
-                || c == ',' || c == '`') {
-                break;
-            }
-            // ':' is a delimiter only when followed by space/newline/tab/end
-            if (c == ':') {
-                char next = stream_.look_ahead(1);
-                if (next == ' ' || next == '\n' || next == '\t'
-                    || next == '\0' || next == ',' || next == ']'
-                    || next == '}' || next == '#') {
+        // Unquoted scalar - read until delimiter, batch mode
+        {
+            auto seg = stream_.current_segment();
+            size_t i = 0;
+            size_t len = seg.size();
+
+            while (i < len) {
+                char c = seg[i];
+                // Delimiters for unquoted scalars
+                if (c == '\0' || c == '\n' || c == '\r'
+                    || c == '#' || c == '[' || c == ']' || c == '{' || c == '}'
+                    || c == ',' || c == '`') {
                     break;
                 }
+                // ':' is a delimiter only when followed by space/newline/tab/end
+                if (c == ':') {
+                    char next = (i + 1 < len) ? seg[i + 1] : '\0';
+                    if (next == ' ' || next == '\n' || next == '\t'
+                        || next == '\0' || next == ',' || next == ']'
+                        || next == '}' || next == '#') {
+                        break;
+                    }
+                }
+                i++;
             }
-            value += stream_.get();
+
+            if (i > 0) {
+                // Trim trailing whitespace (but still consume from stream)
+                size_t content_end = i;
+                while (content_end > 0 && (seg[content_end - 1] == ' ' || seg[content_end - 1] == '\t')) {
+                    content_end--;
+                }
+                value.append(seg.data(), content_end);
+                stream_.advance(i);
+            }
         }
 
-        // Trim trailing whitespace
+        // Trim trailing whitespace (backup: handle any whitespace before delimiter)
         while (!value.empty() && (value.back() == ' ' || value.back() == '\t')) {
             value.pop_back();
         }
@@ -364,15 +390,24 @@ void Scanner::scan_scalar() {
 // ===========================================================================
 void Scanner::scan_comment() {
     auto mark = stream_.get_mark();
-    std::string text;
-    text += stream_.get(); // consume '#'
-
-    while (true) {
-        char c = stream_.peek();
-        if (c == '\n' || c == '\0' || stream_.eof()) break;
-        text += stream_.get();
+    // Consume '#'
+    stream_.get();
+    
+    // Read rest of comment line in batch
+    auto seg = stream_.current_segment();
+    size_t n = 0;
+    for (char c : seg) {
+        if (c == '\n' || c == '\0') break;
+        n++;
     }
-
+    std::string text;
+    text.reserve(n + 1);
+    text += '#';
+    if (n > 0) {
+        text.append(seg.data(), n);
+        stream_.advance(n);
+    }
+    
     push_token(TokenType::Comment, mark, text);
 }
 

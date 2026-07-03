@@ -111,7 +111,7 @@ Node Node::operator[](const std::string& key) {
 
     // Fast hash-indexed lookup first
     {
-        auto existing = data_->map_find(key);
+        auto existing = data_->map_.empty() ? nullptr : data_->map_find(key);
         if (existing) {
             return Node(existing);
         }

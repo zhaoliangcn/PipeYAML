@@ -62,21 +62,20 @@ Emitter::State Emitter::current_top() const {
 // Output helpers
 // ===========================================================================
 void Emitter::output(const std::string& text) {
-    output_ << text;
+    output_.append(text);
 }
 
 void Emitter::output_char(char c) {
-    output_ << c;
+    output_ += c;
 }
 
 void Emitter::output_newline() {
-    output_ << '\n';
+    output_ += '\n';
 }
 
 void Emitter::output_indent() {
-    for (int i = 0; i < indent_level_ * indent_size_; ++i) {
-        output_ << ' ';
-    }
+    int n = indent_level_ * indent_size_;
+    if (n > 0) output_.append(n, ' ');
 }
 
 void Emitter::increase_indent() {
@@ -99,13 +98,11 @@ void Emitter::set_error(const std::string& msg) {
 // Output retrieval
 // ===========================================================================
 std::string Emitter::str() const {
-    return output_.str();
+    return output_;
 }
 
 const std::string& Emitter::c_str() const {
-    static std::string s;
-    s = output_.str();
-    return s;
+    return output_;
 }
 
 // ===========================================================================
@@ -271,7 +268,6 @@ void Emitter::emit(const Node& node) {
     push_state(State::Ready);
     indent_level_ = 0;
     has_error_ = false;
-    output_.str("");
     output_.clear();
 
     emit_node(node);

@@ -21,6 +21,8 @@ public:
     char get();                           // Consume and return next char
     void eat(size_t n = 1);              // Consume n chars without returning
     bool eof() const;                     // End of stream reached
+    std::string_view current_segment() const;  // View from pos_ to buffer end (for batch reading)
+    void advance(size_t n);              // Advance pos_ by n with column tracking
 
     // Position info
     Mark get_mark() const { return mark_; }
