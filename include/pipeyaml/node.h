@@ -46,7 +46,6 @@ struct node_data {
     // Variant-like storage: at any time only one of these is active
     std::vector<std::shared_ptr<node_data>> sequence_;
     std::vector<MapPair> map_;
-    std::vector<MapPair> undefined_pairs_;
 
     // Cached converted values for fast repeated access
     mutable std::optional<int> cached_int_;
@@ -253,7 +252,6 @@ template<> struct convert<Node> {
         data->scalar_.clear();
         data->sequence_.clear();
         data->map_.clear();
-        data->undefined_pairs_.clear();
         if (value.is_scalar()) data->scalar_ = value.scalar();
         if (value.is_sequence()) {
             for (size_t i = 0; i < value.size(); ++i)

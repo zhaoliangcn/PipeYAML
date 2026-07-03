@@ -132,7 +132,6 @@ Node Node::operator[](const std::string& key) {
     key_node->scalar_ = key;
     auto value_node = std::make_shared<node_data>(NodeType::Null, false);
     data_->map_insert(key_node, value_node);
-    data_->undefined_pairs_.emplace_back(key_node, value_node);
     return Node(value_node);
 }
 
