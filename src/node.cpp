@@ -7,11 +7,6 @@ namespace YAML {
 // ---------------------------------------------------------------------------
 // node_data
 // ---------------------------------------------------------------------------
-void node_data::map_remove(const std::shared_ptr<node_data>& key) {
-    auto it = std::remove_if(map_.begin(), map_.end(),
-        [&](const MapPair& p) { return p.first == key; });
-    map_.erase(it, map_.end());
-}
 
 // ---------------------------------------------------------------------------
 // Node construction
@@ -88,6 +83,8 @@ static std::shared_ptr<node_data> find_map_key(
     const std::vector<node_data::MapPair>& map,
     const std::string& key)
 {
+    // Use hash index when available via the data pointer
+    // Fallback: linear scan (for maps without index)
     for (const auto& pair : map) {
         if (pair.first && pair.first->type_ == NodeType::Scalar
             && pair.first->scalar_ == key) {
@@ -112,27 +109,29 @@ Node Node::operator[](const std::string& key) {
     if (data_->type_ != NodeType::Map)
         throw BadConversionException("Node is not a map");
 
-    // Check already existing key
-    auto existing = find_map_key(data_->map_, key);
-    if (existing) {
-        return Node(existing);
+    // Fast hash-indexed lookup first
+    {
+        auto existing = data_->map_find(key);
+        if (existing) {
+            return Node(existing);
+        }
     }
 
     // Create a new key-value pair with undefined value
     auto key_node = std::make_shared<node_data>(NodeType::Scalar);
     key_node->scalar_ = key;
     auto value_node = std::make_shared<node_data>(NodeType::Null, false);
-    data_->map_.emplace_back(key_node, value_node);
+    data_->map_insert(key_node, value_node);
     data_->undefined_pairs_.emplace_back(key_node, value_node);
     return Node(value_node);
 }
 
-// Const version: read-only lookup
+// Const version: read-only lookup (uses hash index for O(1))
 Node Node::operator[](const std::string& key) const {
     if (!data_ || data_->type_ != NodeType::Map) {
         throw BadConversionException("Node is not a map");
     }
-    auto existing = find_map_key(data_->map_, key);
+    auto existing = data_->map_find(key);
     if (existing) {
         return Node(existing);
     }
@@ -141,9 +140,14 @@ Node Node::operator[](const std::string& key) const {
 
 void Node::remove(const std::string& key) {
     if (!data_ || data_->type_ != NodeType::Map) return;
-    auto key_node = std::make_shared<node_data>(NodeType::Scalar);
-    key_node->scalar_ = key;
-    data_->map_remove(key_node);
+    // Remove from hash index (already done in map_remove) and vector
+    data_->map_index_.erase(key);
+    for (auto it = data_->map_.begin(); it != data_->map_.end(); ++it) {
+        if (it->first && it->first->type_ == NodeType::Scalar && it->first->scalar_ == key) {
+            data_->map_.erase(it);
+            break;
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------

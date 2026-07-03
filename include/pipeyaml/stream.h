@@ -3,10 +3,10 @@
 
 #include "exception.h"
 
-#include <deque>
 #include <istream>
 #include <memory>
 #include <string>
+#include <string_view>
 
 namespace YAML {
 
@@ -31,9 +31,9 @@ public:
 private:
     void init(std::string_view data);
     void detect_encoding();
-    void fill_buffer(size_t min_size);
 
-    std::deque<char> buffer_;
+    std::string buffer_;      // full input data + sentinel
+    size_t pos_ = 0;          // current read position in buffer_
     Mark mark_;
     bool eof_ = false;
 };

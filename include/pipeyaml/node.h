@@ -7,6 +7,7 @@
 #include <memory>
 #include <string>
 #include <type_traits>
+#include <unordered_map>
 #include <vector>
 
 namespace YAML {
@@ -46,6 +47,9 @@ struct node_data {
     std::vector<MapPair> map_;
     std::vector<MapPair> undefined_pairs_;
 
+    // Hash index for O(1) map key lookup (mirrors map_ vector)
+    std::unordered_map<std::string, std::shared_ptr<node_data>> map_index_;
+
     node_data() = default;
     explicit node_data(NodeType t, bool defined = true)
         : type_(t), is_defined_(defined) {}
@@ -74,10 +78,38 @@ struct node_data {
     const std::vector<MapPair>& map() const { return map_; }
     void map_insert(std::shared_ptr<node_data> key, std::shared_ptr<node_data> value) {
         type_ = NodeType::Map;
+        // Update hash index for string keys
+        if (key && key->type_ == NodeType::Scalar) {
+            map_index_[key->scalar_] = value;
+        }
         map_.emplace_back(std::move(key), std::move(value));
     }
-    void map_remove(const std::shared_ptr<node_data>& key);
+    void map_remove(const std::shared_ptr<node_data>& key) {
+        if (key && key->type_ == NodeType::Scalar) {
+            map_index_.erase(key->scalar_);
+        }
+        // Also linear scan to remove from vector
+        for (auto it = map_.begin(); it != map_.end(); ++it) {
+            if (it->first == key) {
+                map_.erase(it);
+                break;
+            }
+        }
+    }
     std::size_t map_size() const { return map_.size(); }
+    // Fast lookup via hash index (falls back to linear search)
+    std::shared_ptr<node_data> map_find(const std::string& key) const {
+        auto it = map_index_.find(key);
+        if (it != map_index_.end()) return it->second;
+        // Fallback: linear scan (for maps built before hash index was added)
+        for (const auto& pair : map_) {
+            if (pair.first && pair.first->type_ == NodeType::Scalar
+                && pair.first->scalar_ == key) {
+                return pair.second;
+            }
+        }
+        return nullptr;
+    }
 };
 
 // =============================================================================

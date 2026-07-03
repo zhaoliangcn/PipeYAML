@@ -20,28 +20,25 @@ Scanner::Scanner(Stream& stream)
 // ===========================================================================
 const Token& Scanner::peek() {
     ensure_tokens_in_queue();
-    if (tokens_.empty()) {
-        // Return a static end-of-stream token
+    if (token_head_ >= tokens_.size()) {
         static Token eos(TokenType::EndOfStream, stream_.get_mark());
         return eos;
     }
-    return tokens_.front();
+    return tokens_[token_head_];
 }
 
 Token Scanner::pop() {
     ensure_tokens_in_queue();
-    if (tokens_.empty()) {
+    if (token_head_ >= tokens_.size()) {
         return Token(TokenType::EndOfStream, stream_.get_mark());
     }
-    Token t = std::move(tokens_.front());
-    tokens_.pop_front();
-    return t;
+    return tokens_[token_head_++];
 }
 
 bool Scanner::empty() {
     ensure_tokens_in_queue();
-    if (tokens_.empty()) return true;
-    return tokens_.front().type == TokenType::EndOfStream;
+    if (token_head_ >= tokens_.size()) return true;
+    return tokens_[token_head_].type == TokenType::EndOfStream;
 }
 
 void Scanner::scan_all() {
@@ -51,8 +48,7 @@ void Scanner::scan_all() {
 }
 
 void Scanner::ensure_tokens_in_queue() {
-    // Keep scanning until we have at least one token, or we hit EOF
-    while (tokens_.empty() && !ended_) {
+    while (token_head_ >= tokens_.size() && !ended_) {
         scan_next_token();
     }
 }
@@ -259,6 +255,7 @@ void Scanner::scan_anchor_or_alias() {
 void Scanner::scan_scalar() {
     auto mark = stream_.get_mark();
     std::string value;
+    value.reserve(64);  // pre-reserve to reduce reallocations
 
     // Check for quoted scalars
     char c = stream_.peek();

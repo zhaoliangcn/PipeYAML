@@ -39,8 +39,8 @@ Token Parser::expect_token(TokenType type) {
 }
 
 bool Parser::peek_token(TokenType type) const {
-    if (scanner_.tokens_.empty()) return false;
-    return scanner_.tokens_.front().type == type;
+    if (scanner_.token_head_ >= scanner_.tokens_.size()) return false;
+    return scanner_.tokens_[scanner_.token_head_].type == type;
 }
 
 Token Parser::consume_token() {
@@ -194,7 +194,7 @@ std::shared_ptr<node_data> Parser::parse_sequence() {
     auto result = std::make_shared<node_data>(NodeType::Sequence);
     // Mark the position in the token queue so we can detect when
     // the sequence ends (next item at same indent)
-    size_t checkpoint = scanner_.tokens_.size();
+    size_t checkpoint = scanner_.tokens_avail();
 
     while (true) {
         // Skip newlines before items
@@ -242,7 +242,7 @@ std::shared_ptr<node_data> Parser::parse_flow_sequence() {
         }
 
         // Skip commas
-        while (!scanner_.tokens_.empty() && scanner_.tokens_.front().value == ",") {
+        while (scanner_.tokens_avail() > 0 && scanner_.token_at(0).value == ",") {
             consume_token();
         }
     }
@@ -274,10 +274,10 @@ std::shared_ptr<node_data> Parser::parse_flow_map() {
         // Parse value
         auto value = parse_node();
 
-        result->map_.emplace_back(std::move(key), std::move(value));
+        result->map_insert(std::move(key), std::move(value));
 
         // Skip commas
-        while (!scanner_.tokens_.empty() && scanner_.tokens_.front().value == ",") {
+        while (scanner_.tokens_avail() > 0 && scanner_.token_at(0).value == ",") {
             consume_token();
         }
     }
@@ -312,8 +312,8 @@ std::shared_ptr<node_data> Parser::parse_map() {
         }
 
         // Check indent of the current token against map indent
-        if (map_indent >= 0 && !scanner_.tokens_.empty()) {
-            int tok_indent = scanner_.tokens_.front().indent;
+        if (map_indent >= 0 && scanner_.tokens_avail() > 0) {
+            int tok_indent = scanner_.token_at(0).indent;
             if (tok_indent >= 0 && tok_indent < map_indent) {
                 break;  // indent went back, map is done
             }
@@ -324,8 +324,8 @@ std::shared_ptr<node_data> Parser::parse_map() {
 
         if (peek_token(TokenType::Scalar)) {
             // Record indent from first key token
-            if (map_indent < 0 && !scanner_.tokens_.empty()) {
-                map_indent = scanner_.tokens_.front().indent;
+            if (map_indent < 0 && scanner_.tokens_avail() > 0) {
+                map_indent = scanner_.token_at(0).indent;
             }
             key = parse_scalar(consume_token());
         } else if (peek_token(TokenType::Anchor)) {
@@ -387,7 +387,7 @@ std::shared_ptr<node_data> Parser::parse_map() {
             value = parse_node();
         }
 
-        result->map_.emplace_back(std::move(key), std::move(value));
+        result->map_insert(std::move(key), std::move(value));
     }
 
     return result;

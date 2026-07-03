@@ -86,21 +86,25 @@ public:
     Mark get_mark() const { return stream_.get_mark(); }
 
     // Look-ahead: check if next token (without consuming) is available
-    bool has_next() { ensure_more_tokens(); return tokens_.size() >= 2; }
-    TokenType peek_next_type() { has_next(); return tokens_[1].type; }
+    bool has_next() { ensure_more_tokens(); return token_head_ + 1 < tokens_.size(); }
+    TokenType peek_next_type() { has_next(); return tokens_[token_head_ + 1].type; }
 
 private:
     friend class Parser;
 
     // Core scanning
     void ensure_tokens_in_queue();
-    void ensure_more_tokens() { while (tokens_.size() < 2 && !ended_) scan_next_token(); }
+    void ensure_more_tokens() { while (token_head_ + 1 >= tokens_.size() && !ended_) scan_next_token(); }
     void scan_next_token();
     void push_token(TokenType t, const Mark& m, std::string v = "") {
         Token tok(t, m, std::move(v));
         tok.indent = current_indent();
         tokens_.push_back(std::move(tok));
     }
+    // Token queue access helpers (vector + head index)
+    size_t tokens_avail() const { return tokens_.size() - token_head_; }
+    const Token& token_at(size_t i) const { return tokens_[token_head_ + i]; }
+    size_t token_offset() const { return token_head_; }
     void scan_scalar();
 
     // Structure scanners
@@ -136,7 +140,8 @@ private:
     int read_indent();
 
     Stream& stream_;
-    std::deque<Token> tokens_;
+    std::vector<Token> tokens_;        // vector-based queue (push_back + head index)
+    size_t token_head_ = 0;            // logical front of the queue
     std::vector<IndentMarker> indents_;
     std::vector<int> flows_;           // flow context stack (>0 means in flow)
     std::vector<SimpleKey> simple_keys_;
