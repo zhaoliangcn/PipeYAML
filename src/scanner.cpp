@@ -296,57 +296,85 @@ void Scanner::scan_scalar() {
     }
 
     if (is_quoted) {
-        // Read quoted scalar
-        while (true) {
-            c = stream_.get();
-
-            if (c == quote_char) {
-                // Check for escaped quote (double quote)
-                if (quote_char == '\'' && stream_.peek() == '\'') {
-                    value += stream_.get(); // escaped single quote
+        if (quote_char == '\'') {
+            // Single-quoted scalar: batch-read for speed
+            // Only special case is '' (escaped single quote)
+            while (true) {
+                auto seg = stream_.current_segment();
+                if (seg.empty()) {
+                    if (stream_.eof())
+                        throw ScannerException("Unterminated quoted scalar", mark);
+                    break;
+                }
+                // Find next quote
+                auto pos = seg.find('\'');
+                if (pos == std::string_view::npos) {
+                    // No quote in this segment — append everything
+                    value.append(seg.data(), seg.size());
+                    stream_.advance(seg.size());
+                    continue;
+                }
+                // Found a quote — append preceding text
+                if (pos > 0)
+                    value.append(seg.data(), pos);
+                stream_.advance(pos + 1); // consume up to and including quote
+                // Check for escaped quote (two consecutive quotes)
+                auto next_seg = stream_.current_segment();
+                if (!next_seg.empty() && next_seg[0] == '\'') {
+                    value += '\'';
+                    stream_.advance(1);
                     continue;
                 }
                 break; // end of quoted scalar
             }
-            if (c == '\0' || stream_.eof()) {
-                throw ScannerException("Unterminated quoted scalar", mark);
-            }
-            if (c == '\\' && quote_char == '"') {
-                // Escape sequence in double-quoted string
-                char next = stream_.get();
-                switch (next) {
-                    case '0': value += '\0'; break;
-                    case 'a': value += '\a'; break;
-                    case 'b': value += '\b'; break;
-                    case 't': case '\t': value += '\t'; break;
-                    case 'n': value += '\n'; break;
-                    case 'v': value += '\v'; break;
-                    case 'f': value += '\f'; break;
-                    case 'r': value += '\r'; break;
-                    case 'e': value += '\x1B'; break;
-                    case ' ': value += ' '; break;
-                    case '"': value += '"'; break;
-                    case '/': value += '/'; break;
-                    case '\\': value += '\\'; break;
-                    case 'N': value += '\x85'; break;
-                    case '_': value += '\xA0'; break;
-                    case 'L': value += "\xE2\x80\xA8"; break;
-                    case 'P': value += "\xE2\x80\xA9"; break;
-                    default:
-                        if (next == 'x') {
-                            char hex[3] = {stream_.get(), stream_.get(), 0};
-                            value += static_cast<char>(std::strtol(hex, nullptr, 16));
-                        } else if (next == 'u') {
-                            value += '\\'; value += 'u';
-                            for (int i = 0; i < 4; i++) value += stream_.get();
-                        } else if (next == 'U') {
-                            value += '\\'; value += 'U';
-                            for (int i = 0; i < 8; i++) value += stream_.get();
-                        }
-                        break;
+        } else {
+            // Double-quoted scalar: character-by-character (escape sequences)
+            while (true) {
+                c = stream_.get();
+
+                if (c == '"') {
+                    break; // end of quoted scalar
                 }
-            } else {
-                value += c;
+                if (c == '\0' || stream_.eof()) {
+                    throw ScannerException("Unterminated quoted scalar", mark);
+                }
+                if (c == '\\') {
+                    // Escape sequence in double-quoted string
+                    char next = stream_.get();
+                    switch (next) {
+                        case '0': value += '\0'; break;
+                        case 'a': value += '\a'; break;
+                        case 'b': value += '\b'; break;
+                        case 't': case '\t': value += '\t'; break;
+                        case 'n': value += '\n'; break;
+                        case 'v': value += '\v'; break;
+                        case 'f': value += '\f'; break;
+                        case 'r': value += '\r'; break;
+                        case 'e': value += '\x1B'; break;
+                        case ' ': value += ' '; break;
+                        case '"': value += '"'; break;
+                        case '/': value += '/'; break;
+                        case '\\': value += '\\'; break;
+                        case 'N': value += '\x85'; break;
+                        case '_': value += '\xA0'; break;
+                        case 'L': value += "\xE2\x80\xA8"; break;
+                        case 'P': value += "\xE2\x80\xA9"; break;
+                        default:
+                            if (next == 'x') {
+                                char hex[3] = {stream_.get(), stream_.get(), 0};
+                                value += static_cast<char>(std::strtol(hex, nullptr, 16));
+                            } else if (next == 'u') {
+                                value += '\\'; value += 'u';
+                                for (int i = 0; i < 4; i++) value += stream_.get();
+                            } else if (next == 'U') {
+                                value += '\\'; value += 'U';
+                                for (int i = 0; i < 8; i++) value += stream_.get();
+                            }
+                            break;
+                    }
+                } else {
+                    value += c;
+                }
             }
         }
     } else {
