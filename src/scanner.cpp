@@ -94,11 +94,10 @@ void Scanner::scan_next_token() {
 
     char c = stream_.peek();
 
+    // End of stream
     if (c == '\0' || stream_.eof()) {
-        // End of stream
         if (!ended_) {
             ended_ = true;
-            // Pop indentation stack
             while (indents_.size() > 1) {
                 indents_.pop_back();
             }
@@ -107,62 +106,76 @@ void Scanner::scan_next_token() {
         return;
     }
 
-    // Handle based on first character
-    if (c == '\n') {
-        scan_newline();
-    } else if (c == '#') {
-        scan_comment();
-    } else if (c == '-') {
-        // Could be block sequence entry or document start or negative number
-        if (stream_.look_ahead(1) == ' ' || stream_.look_ahead(1) == '\n'
-            || stream_.look_ahead(1) == '\t' || stream_.look_ahead(1) == '\0') {
-            scan_block_sequence_entry();
-        } else if (stream_.look_ahead(1) == '-' && stream_.look_ahead(2) == '-') {
-            scan_document_marker();
-        } else {
+    // Dispatch via lookup table for common characters
+    switch (c) {
+        case '\n':
+            scan_newline();
+            return;
+        case '#':
+            scan_comment();
+            return;
+        case '-':
+            // Could be block sequence entry or document start or negative number
+            if (stream_.look_ahead(1) == ' ' || stream_.look_ahead(1) == '\n'
+                || stream_.look_ahead(1) == '\t' || stream_.look_ahead(1) == '\0') {
+                scan_block_sequence_entry();
+            } else if (stream_.look_ahead(1) == '-' && stream_.look_ahead(2) == '-') {
+                scan_document_marker();
+            } else {
+                scan_scalar();
+            }
+            return;
+        case ':':
+            // Could be key separator or part of a scalar
+            {
+                char next = stream_.look_ahead(1);
+                if (next == ' ' || next == '\n' || next == '\t' || next == '\0' || next == ','
+                    || next == ']' || next == '}' || next == '#') {
+                    stream_.get();
+                    push_token(TokenType::Key, stream_.get_mark());
+                } else {
+                    scan_scalar();
+                }
+            }
+            return;
+        case '[':
+            scan_flow_sequence();
+            return;
+        case ']':
+            stream_.get();
+            push_token(TokenType::FlowSequenceEnd, stream_.get_mark());
+            if (!flows_.empty()) flows_.pop_back();
+            return;
+        case '{':
+            scan_flow_map();
+            return;
+        case '}':
+            stream_.get();
+            push_token(TokenType::FlowMapEnd, stream_.get_mark());
+            if (!flows_.empty()) flows_.pop_back();
+            return;
+        case '&':
+        case '*':
+            scan_anchor_or_alias();
+            return;
+        case ',':
+        case '?':
+            // Flow separator or explicit key indicator
+            stream_.get();
+            return;
+        case '%':
+            scan_directive();
+            return;
+        case '.':
+            if (stream_.look_ahead(1) == '.' && stream_.look_ahead(2) == '.') {
+                scan_document_marker();
+            } else {
+                scan_scalar();
+            }
+            return;
+        default:
             scan_scalar();
-        }
-    } else if (c == ':') {
-        // Could be key separator or part of a scalar
-        char next = stream_.look_ahead(1);
-        if (next == ' ' || next == '\n' || next == '\t' || next == '\0' || next == ','
-            || next == ']' || next == '}' || next == '#') {
-            stream_.get(); // consume ':'
-            push_token(TokenType::Key, stream_.get_mark());
-        } else {
-            scan_scalar();
-        }
-    } else if (c == '[') {
-        scan_flow_sequence();
-    } else if (c == ']') {
-        stream_.get();
-        push_token(TokenType::FlowSequenceEnd, stream_.get_mark());
-        if (!flows_.empty()) flows_.pop_back();
-    } else if (c == '{') {
-        scan_flow_map();
-    } else if (c == '}') {
-        stream_.get();
-        push_token(TokenType::FlowMapEnd, stream_.get_mark());
-        if (!flows_.empty()) flows_.pop_back();
-    } else if (c == '&') {
-        scan_anchor_or_alias(); // anchor
-    } else if (c == '*') {
-        scan_anchor_or_alias(); // alias
-    } else if (c == ',' || c == '?') {
-        // Flow separator or explicit key indicator
-        stream_.get();
-        // For now, skip these - the parser handles them via context
-        // Comma is a flow separator, '?' is explicit mapping key
-    } else if (c == '%') {
-        scan_directive();
-    } else if (c == '.') {
-        if (stream_.look_ahead(1) == '.' && stream_.look_ahead(2) == '.') {
-            scan_document_marker();
-        } else {
-            scan_scalar();
-        }
-    } else {
-        scan_scalar();
+            return;
     }
 }
 

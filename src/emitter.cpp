@@ -206,56 +206,59 @@ void Emitter::emit_node(const Node& node) {
 void Emitter::emit_sequence(const Node& node) {
     StateEntry& st = current_state();
     bool is_flow = (st.state == State::InFlowSequence || st.state == State::InFlowMap);
+    auto data = node.get_data();
+    if (!data) return;
+    const auto& seq = data->sequence();
 
     if (is_flow) {
         output("[");
-        for (size_t i = 0; i < node.size(); ++i) {
+        for (size_t i = 0; i < seq.size(); ++i) {
             if (i > 0) output(", ");
-            emit_node(node[i]);
+            emit_node(Node(seq[i]));
         }
         output("]");
     } else {
-        for (size_t i = 0; i < node.size(); ++i) {
+        for (size_t i = 0; i < seq.size(); ++i) {
             output_newline();
             output_indent();
             output("- ");
             increase_indent();
-            emit_node(node[i]);
+            emit_node(Node(seq[i]));
             decrease_indent();
         }
     }
 }
 
 void Emitter::emit_map(const Node& node) {
-    const auto& map_data = node.get_data()->map();
+    auto data = node.get_data();
+    if (!data) return;
+    const auto& map_data = data->map();
 
     for (size_t i = 0; i < map_data.size(); ++i) {
         const auto& pair = map_data[i];
-        Node key_node(pair.first);
-        Node value_node(pair.second);
 
         output_newline();
         output_indent();
 
-        // Emit key
-        if (key_node.is_scalar()) {
-            emit_scalar(key_node.scalar());
+        // Emit key - access node_data directly to avoid Node overhead
+        if (pair.first && pair.first->type_ == NodeType::Scalar) {
+            emit_scalar(pair.first->scalar());
         } else {
             // Complex key - wrap with '?'
             output("? ");
-            emit_node(key_node);
+            if (pair.first) emit_node(Node(pair.first));
             output_newline();
             output_indent();
         }
 
         output(": ");
 
-        if (value_node.is_defined()) {
-            if (value_node.is_scalar() || value_node.is_null()) {
-                emit_node(value_node);
+        if (pair.second && pair.second->is_defined_) {
+            if (pair.second->type_ == NodeType::Scalar || pair.second->type_ == NodeType::Null) {
+                emit_scalar(pair.second->scalar());
             } else {
                 increase_indent();
-                emit_node(value_node);
+                emit_node(Node(pair.second));
                 decrease_indent();
             }
         }
