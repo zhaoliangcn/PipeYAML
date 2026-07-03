@@ -133,10 +133,15 @@ public:
     template<typename T>
     Node& operator=(const T& value);
 
+    // Custom copy assignment (declared; defined after convert<Node>)
+    Node& operator=(const Node& other);
+
     bool operator==(const Node& other) const;
     bool operator!=(const Node& other) const { return !(*this == other); }
 
     std::shared_ptr<node_data> get_data() const { return data_; }
+    void set_data(std::shared_ptr<node_data> data) { data_ = std::move(data); }
+    void reset() { data_ = std::make_shared<node_data>(); }
 
 private:
     friend class Emitter;
@@ -212,6 +217,7 @@ template<> struct convert<Node> {
         return true;
     }
     static bool encode(Node& value, Node& node) {
+        // Modify node's data in-place so shared references (map entries) are updated
         auto data = node.get_data();
         if (!data) data = std::make_shared<node_data>();
         data->type_ = value.type();
@@ -232,6 +238,12 @@ template<> struct convert<Node> {
         return true;
     }
 };
+
+// Copy assignment for Node (must be defined after convert<Node>)
+inline Node& Node::operator=(const Node& other) {
+    convert<Node>::encode(const_cast<Node&>(other), *this);
+    return *this;
+}
 
 // =============================================================================
 // Node template method implementations (inline)

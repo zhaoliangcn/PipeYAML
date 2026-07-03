@@ -100,7 +100,7 @@ void Scanner::scan_next_token() {
             while (indents_.size() > 1) {
                 indents_.pop_back();
             }
-            tokens_.emplace_back(TokenType::EndOfStream, stream_.get_mark());
+            push_token(TokenType::EndOfStream, stream_.get_mark());
         }
         return;
     }
@@ -126,7 +126,7 @@ void Scanner::scan_next_token() {
         if (next == ' ' || next == '\n' || next == '\t' || next == '\0' || next == ','
             || next == ']' || next == '}' || next == '#') {
             stream_.get(); // consume ':'
-            tokens_.emplace_back(TokenType::Key, stream_.get_mark());
+            push_token(TokenType::Key, stream_.get_mark());
         } else {
             scan_scalar();
         }
@@ -134,13 +134,13 @@ void Scanner::scan_next_token() {
         scan_flow_sequence();
     } else if (c == ']') {
         stream_.get();
-        tokens_.emplace_back(TokenType::FlowSequenceEnd, stream_.get_mark());
+        push_token(TokenType::FlowSequenceEnd, stream_.get_mark());
         if (!flows_.empty()) flows_.pop_back();
     } else if (c == '{') {
         scan_flow_map();
     } else if (c == '}') {
         stream_.get();
-        tokens_.emplace_back(TokenType::FlowMapEnd, stream_.get_mark());
+        push_token(TokenType::FlowMapEnd, stream_.get_mark());
         if (!flows_.empty()) flows_.pop_back();
     } else if (c == '&') {
         scan_anchor_or_alias(); // anchor
@@ -175,7 +175,7 @@ void Scanner::scan_newline() {
 
     // Check if this is an empty line (all whitespace)
     if (stream_.peek() == '\n' || stream_.peek() == '\0') {
-        tokens_.emplace_back(TokenType::Newline, stream_.get_mark());
+        push_token(TokenType::Newline, stream_.get_mark());
         return;
     }
 
@@ -197,7 +197,7 @@ void Scanner::scan_newline() {
         }
     }
 
-    tokens_.emplace_back(TokenType::Newline, stream_.get_mark());
+    push_token(TokenType::Newline, stream_.get_mark());
 }
 
 // ===========================================================================
@@ -206,7 +206,7 @@ void Scanner::scan_newline() {
 void Scanner::scan_block_sequence_entry() {
     auto mark = stream_.get_mark();
     stream_.get(); // consume '-'
-    tokens_.emplace_back(TokenType::BlockSequenceStart, mark);
+    push_token(TokenType::BlockSequenceStart, mark);
 }
 
 // ===========================================================================
@@ -215,7 +215,7 @@ void Scanner::scan_block_sequence_entry() {
 void Scanner::scan_flow_sequence() {
     stream_.get(); // consume '['
     flows_.push_back(1);
-    tokens_.emplace_back(TokenType::FlowSequenceStart, stream_.get_mark());
+    push_token(TokenType::FlowSequenceStart, stream_.get_mark());
 }
 
 // ===========================================================================
@@ -224,7 +224,7 @@ void Scanner::scan_flow_sequence() {
 void Scanner::scan_flow_map() {
     stream_.get(); // consume '{'
     flows_.push_back(1);
-    tokens_.emplace_back(TokenType::FlowMapStart, stream_.get_mark());
+    push_token(TokenType::FlowMapStart, stream_.get_mark());
 }
 
 // ===========================================================================
@@ -250,7 +250,7 @@ void Scanner::scan_anchor_or_alias() {
     }
 
     TokenType type = (prefix == '&') ? TokenType::Anchor : TokenType::Alias;
-    tokens_.emplace_back(type, mark, name);
+    push_token(type, mark, name);
 }
 
 // ===========================================================================
@@ -358,7 +358,7 @@ void Scanner::scan_scalar() {
     }
 
     if (!value.empty() || is_quoted) {
-        tokens_.emplace_back(TokenType::Scalar, mark, value);
+        push_token(TokenType::Scalar, mark, value);
     }
 }
 
@@ -376,7 +376,7 @@ void Scanner::scan_comment() {
         text += stream_.get();
     }
 
-    tokens_.emplace_back(TokenType::Comment, mark, text);
+    push_token(TokenType::Comment, mark, text);
 }
 
 // ===========================================================================
@@ -391,9 +391,9 @@ void Scanner::scan_document_marker() {
 
     if (marker == "---") {
         doc_count_++;
-        tokens_.emplace_back(TokenType::DocumentStart, mark);
+        push_token(TokenType::DocumentStart, mark);
     } else if (marker == "...") {
-        tokens_.emplace_back(TokenType::DocumentEnd, mark);
+        push_token(TokenType::DocumentEnd, mark);
     } else {
         // This shouldn't happen since we checked the pattern
         throw ScannerException("Invalid document marker", mark);

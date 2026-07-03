@@ -79,7 +79,7 @@ inline std::vector<Node> LoadAll(const std::string& input) {
         if (node.is_defined()) {
             docs.push_back(node);
         }
-        node = Node{};
+        node.reset();  // Replace shared_ptr to avoid affecting vector copy
     }
     return docs;
 }

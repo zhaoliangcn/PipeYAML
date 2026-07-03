@@ -286,14 +286,9 @@ Emitter& Emitter::operator<<(const Node& node) {
 Emitter& Emitter::operator<<(const EmitterManip& manip) {
     switch (manip) {
         case EmitterManip::BeginSeq:
-            output_newline();
-            output_indent();
-            output("- ");
             push_state(State::InSequence);
-            increase_indent();
             break;
         case EmitterManip::EndSeq:
-            decrease_indent();
             pop_state();
             break;
         case EmitterManip::BeginMap:
@@ -317,7 +312,12 @@ Emitter& Emitter::operator<<(const EmitterManip& manip) {
 
 Emitter& Emitter::operator<<(const std::string& value) {
     StateEntry& st = current_state();
-    if (st.needs_key) {
+    if (st.state == State::InSequence) {
+        output_newline();
+        output_indent();
+        output("- ");
+        emit_scalar(value);
+    } else if (st.needs_key) {
         emit_scalar(value);
         st.needs_key = false;
     } else {

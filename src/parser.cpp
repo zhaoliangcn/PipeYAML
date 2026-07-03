@@ -75,7 +75,7 @@ void Parser::check_depth() {
 // Document parsing
 // ===========================================================================
 std::shared_ptr<node_data> Parser::parse_document() {
-    // Scan all tokens upfront so look-ahead works
+    // Scan all tokens upfront
     scanner_.scan_all();
 
     // Skip newlines before document
@@ -192,7 +192,9 @@ std::shared_ptr<node_data> Parser::parse_node(bool try_map) {
 // ===========================================================================
 std::shared_ptr<node_data> Parser::parse_sequence() {
     auto result = std::make_shared<node_data>(NodeType::Sequence);
-    int seq_indent = current_indent();
+    // Mark the position in the token queue so we can detect when
+    // the sequence ends (next item at same indent)
+    size_t checkpoint = scanner_.tokens_.size();
 
     while (true) {
         // Skip newlines before items
@@ -205,33 +207,16 @@ std::shared_ptr<node_data> Parser::parse_sequence() {
         }
 
         // Check if we're still in the sequence (next item starts with '-')
-        // or if indentation has changed
         if (!peek_token(TokenType::BlockSequenceStart)) {
-            // If current indent is <= seq_indent, the sequence is done
-            if (current_indent() <= seq_indent && !is_flow_context()) {
-                break;
-            }
             break;
         }
 
         // Consume the '-'
         consume_token();
 
-        // Skip whitespace after '-'
-        while (scanner_.stream_.peek() == ' ' || scanner_.stream_.peek() == '\t') {
-            scanner_.stream_.get();
-        }
-
-        // Parse the value
+        // Parse the value - may be a scalar, sequence, or map
         auto value = parse_node();
         result->sequence_push_back(value);
-
-        // After a scalar value, expect newline
-        if (value->type_ == NodeType::Scalar) {
-            if (peek_token(TokenType::Newline)) {
-                // Let loop continue to check for next item
-            }
-        }
     }
 
     return result;
@@ -306,11 +291,10 @@ std::shared_ptr<node_data> Parser::parse_flow_map() {
 // ===========================================================================
 std::shared_ptr<node_data> Parser::parse_map() {
     auto result = std::make_shared<node_data>(NodeType::Map);
-    int map_indent = current_indent();
-    int iter = 0;
+    int map_indent = -1;  // set from first key token
 
     while (true) {
-        // Skip newlines
+        // Skip newlines before entries
         while (peek_token(TokenType::Newline)) {
             consume_token();
         }
@@ -319,16 +303,30 @@ std::shared_ptr<node_data> Parser::parse_map() {
             break;
         }
 
-        // Check indent - if we've gone back, we're done with this map
-        if (current_indent() < map_indent && !is_flow_context()
-            && !peek_token(TokenType::BlockSequenceStart)) {
+        // If next token is BlockSequenceStart, the map is done
+        if (peek_token(TokenType::BlockSequenceStart) ||
+            peek_token(TokenType::FlowSequenceEnd) ||
+            peek_token(TokenType::FlowMapEnd) ||
+            peek_token(TokenType::DocumentStart)) {
             break;
+        }
+
+        // Check indent of the current token against map indent
+        if (map_indent >= 0 && !scanner_.tokens_.empty()) {
+            int tok_indent = scanner_.tokens_.front().indent;
+            if (tok_indent >= 0 && tok_indent < map_indent) {
+                break;  // indent went back, map is done
+            }
         }
 
         // Parse the key
         std::shared_ptr<node_data> key;
 
         if (peek_token(TokenType::Scalar)) {
+            // Record indent from first key token
+            if (map_indent < 0 && !scanner_.tokens_.empty()) {
+                map_indent = scanner_.tokens_.front().indent;
+            }
             key = parse_scalar(consume_token());
         } else if (peek_token(TokenType::Anchor)) {
             auto tok = consume_token();
@@ -338,9 +336,8 @@ std::shared_ptr<node_data> Parser::parse_map() {
         } else if (peek_token(TokenType::Alias)) {
             auto tok = consume_token();
             key = resolve_alias(tok.value);
-        } else if (peek_token(TokenType::BlockSequenceStart) || peek_token(TokenType::FlowSequenceStart)
+        } else if (peek_token(TokenType::FlowSequenceStart)
                    || peek_token(TokenType::FlowMapStart)) {
-            // Keys can be sequences or flow maps too - pass false to avoid map detection
             key = parse_node(false);
         } else {
             break;
@@ -352,35 +349,37 @@ std::shared_ptr<node_data> Parser::parse_map() {
         if (peek_token(TokenType::Key)) {
             consume_token();
         } else {
-            // If no ':', it might be the start of a sequence, not a map
-            // Put the token back
             throw ParserException("Expected ':' after map key");
         }
 
         // Parse value
         std::shared_ptr<node_data> value;
 
-        // Check if value is on the same line
+        // Check what's on the same line
         if (peek_token(TokenType::Newline) || peek_token(TokenType::EndOfStream)) {
-            // Check if the value is a block sequence or nested map at deeper indent
-            // by looking ahead past the newline
-            if (peek_token(TokenType::Newline)) {
-                consume_token(); // consume the newline
-            }
-            // Skip any additional newlines
+            // Skip the newline and check if value follows at deeper indent
+            consume_token(); // consume newline
             while (peek_token(TokenType::Newline)) {
                 consume_token();
             }
-            // Now check what's at the deeper indent
+            // Check if we have a block sequence at deeper indent
             if (peek_token(TokenType::BlockSequenceStart)) {
                 value = parse_sequence();
-            } else if (peek_token(TokenType::Scalar)) {
-                // Could be a map value or next key - save current indent
-                // Put the token back by NOT consuming it; let the next loop handle it
-                // Actually this means the value is null (key: value on next line as scalar)
-                value = std::make_shared<node_data>(NodeType::Null, true);
+            } else if (peek_token(TokenType::FlowSequenceStart)) {
+                value = parse_flow_sequence();
+            } else if (peek_token(TokenType::FlowMapStart)) {
+                value = parse_flow_map();
+            } else if (peek_token(TokenType::Scalar) && scanner_.has_next() && 
+                       scanner_.peek_next_type() == TokenType::Key) {
+                // Scalar followed by Key at deeper indent = nested map
+                value = parse_map();
             } else {
-                value = std::make_shared<node_data>(NodeType::Null, true);
+                // Single scalar at deeper indent = value
+                if (peek_token(TokenType::Scalar)) {
+                    value = std::make_shared<node_data>(NodeType::Null, true);
+                } else {
+                    value = std::make_shared<node_data>(NodeType::Null, true);
+                }
             }
         } else if (peek_token(TokenType::BlockSequenceStart)) {
             value = parse_sequence();

@@ -51,6 +51,7 @@ struct Token {
     TokenType type = TokenType::Error;
     Mark mark;
     std::string value;
+    int indent = -1;  // indent level when token was scanned (-1 = unknown)
 
     Token() = default;
     Token(TokenType t, const Mark& m, std::string v = "")
@@ -85,8 +86,8 @@ public:
     Mark get_mark() const { return stream_.get_mark(); }
 
     // Look-ahead: check if next token (without consuming) is available
-    bool has_next() { return tokens_.size() >= 2; }
-    TokenType peek_next_type() { return tokens_.size() >= 2 ? tokens_[1].type : TokenType::EndOfStream; }
+    bool has_next() { ensure_more_tokens(); return tokens_.size() >= 2; }
+    TokenType peek_next_type() { has_next(); return tokens_[1].type; }
 
 private:
     friend class Parser;
@@ -95,6 +96,11 @@ private:
     void ensure_tokens_in_queue();
     void ensure_more_tokens() { while (tokens_.size() < 2 && !ended_) scan_next_token(); }
     void scan_next_token();
+    void push_token(TokenType t, const Mark& m, std::string v = "") {
+        Token tok(t, m, std::move(v));
+        tok.indent = current_indent();
+        tokens_.push_back(std::move(tok));
+    }
     void scan_scalar();
 
     // Structure scanners
