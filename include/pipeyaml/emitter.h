@@ -108,6 +108,7 @@ private:
 
     // Emit helpers
     void emit_node(const Node& node);
+    void emit_node_data(const std::shared_ptr<node_data>& data);  // avoid Node wrapper
     void emit_scalar(const std::string& value);
     void emit_sequence(const Node& node);
     void emit_map(const Node& node);

@@ -204,6 +204,77 @@ void Emitter::emit_node(const Node& node) {
     }
 }
 
+void Emitter::emit_node_data(const std::shared_ptr<node_data>& data) {
+    if (!data || !data->is_defined_) {
+        output(null_format_);
+        return;
+    }
+
+    switch (data->type_) {
+        case NodeType::Null:
+            output(null_format_);
+            break;
+        case NodeType::Scalar:
+            emit_scalar(data->scalar_);
+            break;
+        case NodeType::Sequence:
+            {
+                const auto& seq = data->sequence();
+                StateEntry& st = current_state();
+                bool is_flow = (st.state == State::InFlowSequence || st.state == State::InFlowMap);
+                if (is_flow) {
+                    output("[");
+                    for (size_t i = 0; i < seq.size(); ++i) {
+                        if (i > 0) output(", ");
+                        emit_node_data(seq[i]);
+                    }
+                    output("]");
+                } else {
+                    for (size_t i = 0; i < seq.size(); ++i) {
+                        output_newline();
+                        output_indent();
+                        output("- ");
+                        increase_indent();
+                        emit_node_data(seq[i]);
+                        decrease_indent();
+                    }
+                }
+            }
+            break;
+        case NodeType::Map:
+            {
+                const auto& map_data = data->map();
+                for (size_t i = 0; i < map_data.size(); ++i) {
+                    const auto& pair = map_data[i];
+                    output_newline();
+                    output_indent();
+
+                    if (pair.first && pair.first->type_ == NodeType::Scalar) {
+                        emit_scalar(pair.first->scalar());
+                    } else {
+                        output("? ");
+                        if (pair.first) emit_node_data(pair.first);
+                        output_newline();
+                        output_indent();
+                    }
+
+                    output(": ");
+
+                    if (pair.second && pair.second->is_defined_) {
+                        if (pair.second->type_ == NodeType::Scalar || pair.second->type_ == NodeType::Null) {
+                            emit_scalar(pair.second->scalar());
+                        } else {
+                            increase_indent();
+                            emit_node_data(pair.second);
+                            decrease_indent();
+                        }
+                    }
+                }
+            }
+            break;
+    }
+}
+
 void Emitter::emit_sequence(const Node& node) {
     StateEntry& st = current_state();
     bool is_flow = (st.state == State::InFlowSequence || st.state == State::InFlowMap);
@@ -215,7 +286,7 @@ void Emitter::emit_sequence(const Node& node) {
         output("[");
         for (size_t i = 0; i < seq.size(); ++i) {
             if (i > 0) output(", ");
-            emit_node(Node(seq[i]));
+            emit_node_data(seq[i]);
         }
         output("]");
     } else {
@@ -224,7 +295,7 @@ void Emitter::emit_sequence(const Node& node) {
             output_indent();
             output("- ");
             increase_indent();
-            emit_node(Node(seq[i]));
+            emit_node_data(seq[i]);
             decrease_indent();
         }
     }
@@ -247,7 +318,7 @@ void Emitter::emit_map(const Node& node) {
         } else {
             // Complex key - wrap with '?'
             output("? ");
-            if (pair.first) emit_node(Node(pair.first));
+            if (pair.first) emit_node_data(pair.first);
             output_newline();
             output_indent();
         }
@@ -259,7 +330,7 @@ void Emitter::emit_map(const Node& node) {
                 emit_scalar(pair.second->scalar());
             } else {
                 increase_indent();
-                emit_node(Node(pair.second));
+                emit_node_data(pair.second);
                 decrease_indent();
             }
         }
