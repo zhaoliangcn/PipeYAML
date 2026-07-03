@@ -4,6 +4,7 @@
 #include <cmath>
 #include <limits>
 #include <sstream>
+#include <charconv>
 
 namespace YAML {
 
@@ -47,12 +48,8 @@ bool convert<int>::decode(const Node& node, int& value) {
         return true;
     }
     const auto& s = data->scalar();
-    char* end = nullptr;
-    long v = std::strtol(s.c_str(), &end, 0);
-    if (end == s.c_str() || *end != '\0') return false;
-    if (v < static_cast<long>(std::numeric_limits<int>::min()) ||
-        v > static_cast<long>(std::numeric_limits<int>::max())) return false;
-    value = static_cast<int>(v);
+    auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), value);
+    if (ec != std::errc() || ptr != s.data() + s.size()) return false;
     data->cached_int_ = value;
     return true;
 }
@@ -68,12 +65,8 @@ bool convert<int>::encode(int value, Node& node) {
 bool convert<unsigned int>::decode(const Node& node, unsigned int& value) {
     if (!node.is_scalar()) return false;
     const auto& s = node.scalar();
-    char* end = nullptr;
-    unsigned long v = std::strtoul(s.c_str(), &end, 0);
-    if (end == s.c_str() || *end != '\0') return false;
-    if (v > std::numeric_limits<unsigned int>::max()) return false;
-    value = static_cast<unsigned int>(v);
-    return true;
+    auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), value);
+    return ec == std::errc() && ptr == s.data() + s.size();
 }
 
 bool convert<unsigned int>::encode(unsigned int value, Node& node) {
@@ -87,9 +80,8 @@ bool convert<unsigned int>::encode(unsigned int value, Node& node) {
 bool convert<long>::decode(const Node& node, long& value) {
     if (!node.is_scalar()) return false;
     const auto& s = node.scalar();
-    char* end = nullptr;
-    value = std::strtol(s.c_str(), &end, 0);
-    return end != s.c_str() && *end == '\0';
+    auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), value);
+    return ec == std::errc() && ptr == s.data() + s.size();
 }
 
 bool convert<long>::encode(long value, Node& node) {
@@ -103,9 +95,8 @@ bool convert<long>::encode(long value, Node& node) {
 bool convert<unsigned long>::decode(const Node& node, unsigned long& value) {
     if (!node.is_scalar()) return false;
     const auto& s = node.scalar();
-    char* end = nullptr;
-    value = std::strtoul(s.c_str(), &end, 0);
-    return end != s.c_str() && *end == '\0';
+    auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), value);
+    return ec == std::errc() && ptr == s.data() + s.size();
 }
 
 bool convert<unsigned long>::encode(unsigned long value, Node& node) {
@@ -119,9 +110,8 @@ bool convert<unsigned long>::encode(unsigned long value, Node& node) {
 bool convert<long long>::decode(const Node& node, long long& value) {
     if (!node.is_scalar()) return false;
     const auto& s = node.scalar();
-    char* end = nullptr;
-    value = std::strtoll(s.c_str(), &end, 0);
-    return end != s.c_str() && *end == '\0';
+    auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), value);
+    return ec == std::errc() && ptr == s.data() + s.size();
 }
 
 bool convert<long long>::encode(long long value, Node& node) {
@@ -135,9 +125,8 @@ bool convert<long long>::encode(long long value, Node& node) {
 bool convert<unsigned long long>::decode(const Node& node, unsigned long long& value) {
     if (!node.is_scalar()) return false;
     const auto& s = node.scalar();
-    char* end = nullptr;
-    value = std::strtoull(s.c_str(), &end, 0);
-    return end != s.c_str() && *end == '\0';
+    auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), value);
+    return ec == std::errc() && ptr == s.data() + s.size();
 }
 
 bool convert<unsigned long long>::encode(unsigned long long value, Node& node) {
