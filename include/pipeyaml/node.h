@@ -142,6 +142,7 @@ public:
     // Sequence operations
     Node operator[](std::size_t index) const;
     void push_back(const Node& node);
+    void push_back(const std::string& value);  // fast path: create scalar directly
     void remove(std::size_t index);
     std::size_t size() const;
 
