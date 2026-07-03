@@ -141,10 +141,11 @@ bool Emitter::needs_quotes(const std::string& value) const {
     // Check for leading/trailing whitespace
     if (first == ' ' || value.back() == ' ') return true;
 
-    // Check for special newline/escape characters
-    for (char c : value) {
-        if (c == '\n' || c == '\r' || c == '\x1B') return true;
-    }
+    // Check for special newline/escape characters (SIMD-optimized find)
+    if (value.find('\n') != std::string::npos
+        || value.find('\r') != std::string::npos
+        || value.find('\x1B') != std::string::npos)
+        return true;
 
     return false;
 }
