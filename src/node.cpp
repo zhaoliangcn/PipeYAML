@@ -44,6 +44,11 @@ void Node::set_scalar(const std::string& value) {
     data_->set_scalar(value);
 }
 
+void Node::set_scalar(std::string&& value) {
+    if (!data_) data_ = std::make_shared<node_data>();
+    data_->set_scalar(std::move(value));
+}
+
 // ---------------------------------------------------------------------------
 // Sequence operations
 // ---------------------------------------------------------------------------
@@ -61,6 +66,23 @@ void Node::push_back(const Node& node) {
     if (data_->type_ != NodeType::Sequence && data_->type_ != NodeType::Null)
         throw RepresentationException("Cannot push_back on a non-sequence node");
     data_->sequence_push_back(node.data_);
+}
+
+void Node::push_back(Node&& node) {
+    if (!data_)
+        data_ = std::make_shared<node_data>();
+    if (data_->type_ != NodeType::Sequence && data_->type_ != NodeType::Null)
+        throw RepresentationException("Cannot push_back on a non-sequence node");
+    data_->sequence_push_back(std::move(node.data_));
+}
+
+void Node::push_back(NodeType type) {
+    if (!data_)
+        data_ = std::make_shared<node_data>();
+    if (data_->type_ != NodeType::Sequence && data_->type_ != NodeType::Null)
+        throw RepresentationException("Cannot push_back on a non-sequence node");
+    auto child = std::make_shared<node_data>(type);
+    data_->sequence_push_back(std::move(child));
 }
 
 void Node::push_back(const std::string& value) {

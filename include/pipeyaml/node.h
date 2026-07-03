@@ -66,6 +66,14 @@ struct node_data {
         cached_double_.reset();
         cached_bool_.reset();
     }
+    void set_scalar(std::string&& val) {
+        type_ = NodeType::Scalar;
+        is_defined_ = true;
+        scalar_ = std::move(val);
+        cached_int_.reset();
+        cached_double_.reset();
+        cached_bool_.reset();
+    }
 
     // Sequence access
     const std::vector<std::shared_ptr<node_data>>& sequence() const { return sequence_; }
@@ -137,10 +145,13 @@ public:
     // Scalar access
     const std::string& scalar() const;
     void set_scalar(const std::string& value);
+    void set_scalar(std::string&& value);  // rvalue: avoid string copy
 
     // Sequence operations
     Node operator[](std::size_t index) const;
     void push_back(const Node& node);
+    void push_back(Node&& node);             // rvalue: move shared_ptr
+    void push_back(NodeType type);           // fast path: create child directly
     void push_back(const std::string& value);  // fast path: create scalar directly
     void remove(std::size_t index);
     std::size_t size() const;
