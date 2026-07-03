@@ -160,6 +160,9 @@ public:
     template<typename T>
     Node& operator=(const T& value);
 
+    // Rvalue string overload — avoids copy for temporaries
+    Node& operator=(std::string&& value);
+
     // Custom copy assignment (declared; defined after convert<Node>)
     Node& operator=(const Node& other);
 
@@ -295,6 +298,18 @@ T Node::as(const T& fallback) const {
 template<typename T>
 Node& Node::operator=(const T& value) {
     convert<T>::encode(const_cast<T&>(value), *this);
+    return *this;
+}
+
+// Rvalue string overload — moves instead of copying
+inline Node& Node::operator=(std::string&& value) {
+    if (!data_) data_ = std::make_shared<node_data>();
+    data_->type_ = NodeType::Scalar;
+    data_->is_defined_ = true;
+    data_->scalar_ = std::move(value);
+    data_->cached_int_.reset();
+    data_->cached_double_.reset();
+    data_->cached_bool_.reset();
     return *this;
 }
 
