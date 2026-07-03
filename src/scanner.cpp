@@ -381,7 +381,7 @@ void Scanner::scan_scalar() {
     }
 
     if (!value.empty() || is_quoted) {
-        push_token(TokenType::Scalar, mark, value);
+        push_token(TokenType::Scalar, mark, std::move(value));
     }
 }
 
@@ -408,7 +408,7 @@ void Scanner::scan_comment() {
         stream_.advance(n);
     }
     
-    push_token(TokenType::Comment, mark, text);
+    push_token(TokenType::Comment, mark, std::move(text));
 }
 
 // ===========================================================================

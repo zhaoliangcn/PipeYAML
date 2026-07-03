@@ -28,7 +28,7 @@ private:
     std::shared_ptr<node_data> parse_node(bool try_map = true);
     std::shared_ptr<node_data> parse_sequence();
     std::shared_ptr<node_data> parse_map();
-    std::shared_ptr<node_data> parse_scalar(const Token& token);
+    std::shared_ptr<node_data> parse_scalar(Token token);
     std::shared_ptr<node_data> parse_flow_sequence();
     std::shared_ptr<node_data> parse_flow_map();
 

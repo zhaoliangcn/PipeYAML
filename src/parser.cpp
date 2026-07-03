@@ -332,7 +332,7 @@ std::shared_ptr<node_data> Parser::parse_map() {
             auto tok = consume_token();
             register_anchor(tok.value, nullptr);
             key = std::make_shared<node_data>(NodeType::Scalar);
-            key->scalar_ = tok.value;
+            key->scalar_ = std::move(tok.value);
         } else if (peek_token(TokenType::Alias)) {
             auto tok = consume_token();
             key = resolve_alias(tok.value);
@@ -396,9 +396,9 @@ std::shared_ptr<node_data> Parser::parse_map() {
 // ===========================================================================
 // Scalar
 // ===========================================================================
-std::shared_ptr<node_data> Parser::parse_scalar(const Token& token) {
+std::shared_ptr<node_data> Parser::parse_scalar(Token token) {
     auto result = std::make_shared<node_data>(NodeType::Scalar);
-    result->scalar_ = token.value;
+    result->scalar_ = std::move(token.value);
     return result;
 }
 
