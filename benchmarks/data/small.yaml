@@ -1,0 +1,7 @@
+name: PipeYAML
+version: 0.1.0
+language: C++17
+license: MIT
+authors:
+  - name: Developer
+    email: dev@example.com

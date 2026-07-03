@@ -61,3 +61,33 @@ install(EXPORT PipeYAMLTargets
     NAMESPACE PipeYAML::
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/PipeYAML
 )
+
+# =============================================================================
+# Benchmarks (Google Benchmark)
+# =============================================================================
+option(PYPEYAML_BUILD_BENCHMARKS "Build benchmarks" ON)
+if(PYPEYAML_BUILD_BENCHMARKS)
+    set(BENCHMARK_DIR /home/zhaoliang/leveldb/third_party/benchmark)
+    if(EXISTS ${BENCHMARK_DIR}/build/src/libbenchmark.a)
+        add_executable(bench_parse
+            benchmarks/bench_parse.cpp
+            benchmarks/bench_data.h
+        )
+        target_include_directories(bench_parse PRIVATE
+            ${BENCHMARK_DIR}/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks
+        )
+        target_link_libraries(bench_parse PRIVATE
+            pipeyaml
+            ${BENCHMARK_DIR}/build/src/libbenchmark.a
+            ${BENCHMARK_DIR}/build/src/libbenchmark_main.a
+            pthread
+            rt
+        )
+        add_custom_target(benchmark
+            COMMAND bench_parse
+            DEPENDS bench_parse
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+        )
+    endif()
+endif()

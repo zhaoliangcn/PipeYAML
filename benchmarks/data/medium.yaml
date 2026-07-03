@@ -1,0 +1,700 @@
+server_0:
+  host: 10.0.0.0
+  port: 8000
+  enabled: true
+  tags:
+    - production
+    - "region-0"
+server_1:
+  host: 10.0.0.1
+  port: 8001
+  enabled: false
+  tags:
+    - production
+    - "region-1"
+server_2:
+  host: 10.0.0.2
+  port: 8002
+  enabled: true
+  tags:
+    - production
+    - "region-2"
+server_3:
+  host: 10.0.0.3
+  port: 8003
+  enabled: false
+  tags:
+    - production
+    - "region-3"
+server_4:
+  host: 10.0.0.4
+  port: 8004
+  enabled: true
+  tags:
+    - production
+    - "region-4"
+server_5:
+  host: 10.0.0.5
+  port: 8005
+  enabled: false
+  tags:
+    - production
+    - "region-5"
+server_6:
+  host: 10.0.0.6
+  port: 8006
+  enabled: true
+  tags:
+    - production
+    - "region-6"
+server_7:
+  host: 10.0.0.7
+  port: 8007
+  enabled: false
+  tags:
+    - production
+    - "region-7"
+server_8:
+  host: 10.0.0.8
+  port: 8008
+  enabled: true
+  tags:
+    - production
+    - "region-8"
+server_9:
+  host: 10.0.0.9
+  port: 8009
+  enabled: false
+  tags:
+    - production
+    - "region-9"
+server_10:
+  host: 10.0.0.10
+  port: 8010
+  enabled: true
+  tags:
+    - production
+    - "region-0"
+server_11:
+  host: 10.0.0.11
+  port: 8011
+  enabled: false
+  tags:
+    - production
+    - "region-1"
+server_12:
+  host: 10.0.0.12
+  port: 8012
+  enabled: true
+  tags:
+    - production
+    - "region-2"
+server_13:
+  host: 10.0.0.13
+  port: 8013
+  enabled: false
+  tags:
+    - production
+    - "region-3"
+server_14:
+  host: 10.0.0.14
+  port: 8014
+  enabled: true
+  tags:
+    - production
+    - "region-4"
+server_15:
+  host: 10.0.0.15
+  port: 8015
+  enabled: false
+  tags:
+    - production
+    - "region-5"
+server_16:
+  host: 10.0.0.16
+  port: 8016
+  enabled: true
+  tags:
+    - production
+    - "region-6"
+server_17:
+  host: 10.0.0.17
+  port: 8017
+  enabled: false
+  tags:
+    - production
+    - "region-7"
+server_18:
+  host: 10.0.0.18
+  port: 8018
+  enabled: true
+  tags:
+    - production
+    - "region-8"
+server_19:
+  host: 10.0.0.19
+  port: 8019
+  enabled: false
+  tags:
+    - production
+    - "region-9"
+server_20:
+  host: 10.0.0.20
+  port: 8020
+  enabled: true
+  tags:
+    - production
+    - "region-0"
+server_21:
+  host: 10.0.0.21
+  port: 8021
+  enabled: false
+  tags:
+    - production
+    - "region-1"
+server_22:
+  host: 10.0.0.22
+  port: 8022
+  enabled: true
+  tags:
+    - production
+    - "region-2"
+server_23:
+  host: 10.0.0.23
+  port: 8023
+  enabled: false
+  tags:
+    - production
+    - "region-3"
+server_24:
+  host: 10.0.0.24
+  port: 8024
+  enabled: true
+  tags:
+    - production
+    - "region-4"
+server_25:
+  host: 10.0.0.25
+  port: 8025
+  enabled: false
+  tags:
+    - production
+    - "region-5"
+server_26:
+  host: 10.0.0.26
+  port: 8026
+  enabled: true
+  tags:
+    - production
+    - "region-6"
+server_27:
+  host: 10.0.0.27
+  port: 8027
+  enabled: false
+  tags:
+    - production
+    - "region-7"
+server_28:
+  host: 10.0.0.28
+  port: 8028
+  enabled: true
+  tags:
+    - production
+    - "region-8"
+server_29:
+  host: 10.0.0.29
+  port: 8029
+  enabled: false
+  tags:
+    - production
+    - "region-9"
+server_30:
+  host: 10.0.0.30
+  port: 8030
+  enabled: true
+  tags:
+    - production
+    - "region-0"
+server_31:
+  host: 10.0.0.31
+  port: 8031
+  enabled: false
+  tags:
+    - production
+    - "region-1"
+server_32:
+  host: 10.0.0.32
+  port: 8032
+  enabled: true
+  tags:
+    - production
+    - "region-2"
+server_33:
+  host: 10.0.0.33
+  port: 8033
+  enabled: false
+  tags:
+    - production
+    - "region-3"
+server_34:
+  host: 10.0.0.34
+  port: 8034
+  enabled: true
+  tags:
+    - production
+    - "region-4"
+server_35:
+  host: 10.0.0.35
+  port: 8035
+  enabled: false
+  tags:
+    - production
+    - "region-5"
+server_36:
+  host: 10.0.0.36
+  port: 8036
+  enabled: true
+  tags:
+    - production
+    - "region-6"
+server_37:
+  host: 10.0.0.37
+  port: 8037
+  enabled: false
+  tags:
+    - production
+    - "region-7"
+server_38:
+  host: 10.0.0.38
+  port: 8038
+  enabled: true
+  tags:
+    - production
+    - "region-8"
+server_39:
+  host: 10.0.0.39
+  port: 8039
+  enabled: false
+  tags:
+    - production
+    - "region-9"
+server_40:
+  host: 10.0.0.40
+  port: 8040
+  enabled: true
+  tags:
+    - production
+    - "region-0"
+server_41:
+  host: 10.0.0.41
+  port: 8041
+  enabled: false
+  tags:
+    - production
+    - "region-1"
+server_42:
+  host: 10.0.0.42
+  port: 8042
+  enabled: true
+  tags:
+    - production
+    - "region-2"
+server_43:
+  host: 10.0.0.43
+  port: 8043
+  enabled: false
+  tags:
+    - production
+    - "region-3"
+server_44:
+  host: 10.0.0.44
+  port: 8044
+  enabled: true
+  tags:
+    - production
+    - "region-4"
+server_45:
+  host: 10.0.0.45
+  port: 8045
+  enabled: false
+  tags:
+    - production
+    - "region-5"
+server_46:
+  host: 10.0.0.46
+  port: 8046
+  enabled: true
+  tags:
+    - production
+    - "region-6"
+server_47:
+  host: 10.0.0.47
+  port: 8047
+  enabled: false
+  tags:
+    - production
+    - "region-7"
+server_48:
+  host: 10.0.0.48
+  port: 8048
+  enabled: true
+  tags:
+    - production
+    - "region-8"
+server_49:
+  host: 10.0.0.49
+  port: 8049
+  enabled: false
+  tags:
+    - production
+    - "region-9"
+server_50:
+  host: 10.0.0.50
+  port: 8050
+  enabled: true
+  tags:
+    - staging
+    - "region-0"
+server_51:
+  host: 10.0.0.51
+  port: 8051
+  enabled: false
+  tags:
+    - staging
+    - "region-1"
+server_52:
+  host: 10.0.0.52
+  port: 8052
+  enabled: true
+  tags:
+    - staging
+    - "region-2"
+server_53:
+  host: 10.0.0.53
+  port: 8053
+  enabled: false
+  tags:
+    - staging
+    - "region-3"
+server_54:
+  host: 10.0.0.54
+  port: 8054
+  enabled: true
+  tags:
+    - staging
+    - "region-4"
+server_55:
+  host: 10.0.0.55
+  port: 8055
+  enabled: false
+  tags:
+    - staging
+    - "region-5"
+server_56:
+  host: 10.0.0.56
+  port: 8056
+  enabled: true
+  tags:
+    - staging
+    - "region-6"
+server_57:
+  host: 10.0.0.57
+  port: 8057
+  enabled: false
+  tags:
+    - staging
+    - "region-7"
+server_58:
+  host: 10.0.0.58
+  port: 8058
+  enabled: true
+  tags:
+    - staging
+    - "region-8"
+server_59:
+  host: 10.0.0.59
+  port: 8059
+  enabled: false
+  tags:
+    - staging
+    - "region-9"
+server_60:
+  host: 10.0.0.60
+  port: 8060
+  enabled: true
+  tags:
+    - staging
+    - "region-0"
+server_61:
+  host: 10.0.0.61
+  port: 8061
+  enabled: false
+  tags:
+    - staging
+    - "region-1"
+server_62:
+  host: 10.0.0.62
+  port: 8062
+  enabled: true
+  tags:
+    - staging
+    - "region-2"
+server_63:
+  host: 10.0.0.63
+  port: 8063
+  enabled: false
+  tags:
+    - staging
+    - "region-3"
+server_64:
+  host: 10.0.0.64
+  port: 8064
+  enabled: true
+  tags:
+    - staging
+    - "region-4"
+server_65:
+  host: 10.0.0.65
+  port: 8065
+  enabled: false
+  tags:
+    - staging
+    - "region-5"
+server_66:
+  host: 10.0.0.66
+  port: 8066
+  enabled: true
+  tags:
+    - staging
+    - "region-6"
+server_67:
+  host: 10.0.0.67
+  port: 8067
+  enabled: false
+  tags:
+    - staging
+    - "region-7"
+server_68:
+  host: 10.0.0.68
+  port: 8068
+  enabled: true
+  tags:
+    - staging
+    - "region-8"
+server_69:
+  host: 10.0.0.69
+  port: 8069
+  enabled: false
+  tags:
+    - staging
+    - "region-9"
+server_70:
+  host: 10.0.0.70
+  port: 8070
+  enabled: true
+  tags:
+    - staging
+    - "region-0"
+server_71:
+  host: 10.0.0.71
+  port: 8071
+  enabled: false
+  tags:
+    - staging
+    - "region-1"
+server_72:
+  host: 10.0.0.72
+  port: 8072
+  enabled: true
+  tags:
+    - staging
+    - "region-2"
+server_73:
+  host: 10.0.0.73
+  port: 8073
+  enabled: false
+  tags:
+    - staging
+    - "region-3"
+server_74:
+  host: 10.0.0.74
+  port: 8074
+  enabled: true
+  tags:
+    - staging
+    - "region-4"
+server_75:
+  host: 10.0.0.75
+  port: 8075
+  enabled: false
+  tags:
+    - staging
+    - "region-5"
+server_76:
+  host: 10.0.0.76
+  port: 8076
+  enabled: true
+  tags:
+    - staging
+    - "region-6"
+server_77:
+  host: 10.0.0.77
+  port: 8077
+  enabled: false
+  tags:
+    - staging
+    - "region-7"
+server_78:
+  host: 10.0.0.78
+  port: 8078
+  enabled: true
+  tags:
+    - staging
+    - "region-8"
+server_79:
+  host: 10.0.0.79
+  port: 8079
+  enabled: false
+  tags:
+    - staging
+    - "region-9"
+server_80:
+  host: 10.0.0.80
+  port: 8080
+  enabled: true
+  tags:
+    - staging
+    - "region-0"
+server_81:
+  host: 10.0.0.81
+  port: 8081
+  enabled: false
+  tags:
+    - staging
+    - "region-1"
+server_82:
+  host: 10.0.0.82
+  port: 8082
+  enabled: true
+  tags:
+    - staging
+    - "region-2"
+server_83:
+  host: 10.0.0.83
+  port: 8083
+  enabled: false
+  tags:
+    - staging
+    - "region-3"
+server_84:
+  host: 10.0.0.84
+  port: 8084
+  enabled: true
+  tags:
+    - staging
+    - "region-4"
+server_85:
+  host: 10.0.0.85
+  port: 8085
+  enabled: false
+  tags:
+    - staging
+    - "region-5"
+server_86:
+  host: 10.0.0.86
+  port: 8086
+  enabled: true
+  tags:
+    - staging
+    - "region-6"
+server_87:
+  host: 10.0.0.87
+  port: 8087
+  enabled: false
+  tags:
+    - staging
+    - "region-7"
+server_88:
+  host: 10.0.0.88
+  port: 8088
+  enabled: true
+  tags:
+    - staging
+    - "region-8"
+server_89:
+  host: 10.0.0.89
+  port: 8089
+  enabled: false
+  tags:
+    - staging
+    - "region-9"
+server_90:
+  host: 10.0.0.90
+  port: 8090
+  enabled: true
+  tags:
+    - staging
+    - "region-0"
+server_91:
+  host: 10.0.0.91
+  port: 8091
+  enabled: false
+  tags:
+    - staging
+    - "region-1"
+server_92:
+  host: 10.0.0.92
+  port: 8092
+  enabled: true
+  tags:
+    - staging
+    - "region-2"
+server_93:
+  host: 10.0.0.93
+  port: 8093
+  enabled: false
+  tags:
+    - staging
+    - "region-3"
+server_94:
+  host: 10.0.0.94
+  port: 8094
+  enabled: true
+  tags:
+    - staging
+    - "region-4"
+server_95:
+  host: 10.0.0.95
+  port: 8095
+  enabled: false
+  tags:
+    - staging
+    - "region-5"
+server_96:
+  host: 10.0.0.96
+  port: 8096
+  enabled: true
+  tags:
+    - staging
+    - "region-6"
+server_97:
+  host: 10.0.0.97
+  port: 8097
+  enabled: false
+  tags:
+    - staging
+    - "region-7"
+server_98:
+  host: 10.0.0.98
+  port: 8098
+  enabled: true
+  tags:
+    - staging
+    - "region-8"
+server_99:
+  host: 10.0.0.99
+  port: 8099
+  enabled: false
+  tags:
+    - staging
+    - "region-9"
