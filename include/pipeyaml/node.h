@@ -30,6 +30,7 @@ struct node_data;
 struct node_ref;
 class Node;
 class Emitter;
+template<typename T> struct convert;  // forward decl for friend
 
 // =============================================================================
 // node_data - the actual data storage layer (ref-counted by node_ref)
@@ -39,9 +40,6 @@ struct node_data {
 
     NodeType type_ = NodeType::Null;
     bool is_defined_ = false;
-
-    // Scalar
-    std::string scalar_;
 
     // Variant-like storage: at any time only one of these is active
     std::vector<std::shared_ptr<node_data>> sequence_;
@@ -75,6 +73,16 @@ struct node_data {
         cached_bool_.reset();
     }
 
+    // Reset all content fields without changing type_/is_defined_
+    void clear_content() {
+        scalar_.clear();
+        sequence_.clear();
+        map_.clear();
+        cached_int_.reset();
+        cached_double_.reset();
+        cached_bool_.reset();
+    }
+
     // Sequence access
     const std::vector<std::shared_ptr<node_data>>& sequence() const { return sequence_; }
     void sequence_push_back(std::shared_ptr<node_data> child) {
@@ -83,7 +91,7 @@ struct node_data {
     }
     void sequence_remove(std::size_t index) {
         if (index < sequence_.size())
-            sequence_.erase(sequence_.begin() + static_cast<long long>(index));
+            sequence_.erase(sequence_.begin() + static_cast<std::vector<std::shared_ptr<node_data>>::difference_type>(index));
     }
     std::size_t sequence_size() const { return sequence_.size(); }
 
@@ -112,6 +120,11 @@ struct node_data {
         }
         return nullptr;
     }
+
+private:
+    friend class Node;
+    friend struct convert<Node>;
+    std::string scalar_;
 };
 
 // =============================================================================
@@ -195,7 +208,7 @@ private:
 template<typename T>
 struct convert {
     static bool decode(const Node& node, T& value);
-    static bool encode(T& value, Node& node);
+    static bool encode(const T& value, Node& node);
 };
 
 // Built-in type specializations (declared, defined in convert.cpp)
@@ -253,22 +266,17 @@ template<> struct convert<Node> {
         auto data = std::make_shared<node_data>();
         data->type_ = node.type();
         data->is_defined_ = node.is_defined();
-        if (node.is_scalar()) data->scalar_ = node.scalar();
+        if (node.is_scalar()) data->set_scalar(node.scalar());
         value = Node(data);
         return true;
     }
-    static bool encode(Node& value, Node& node) {
+    static bool encode(const Node& value, Node& node) {
         // Modify node's data in-place so shared references (map entries) are updated
         auto data = node.get_data();
         if (!data) data = std::make_shared<node_data>();
         data->type_ = value.type();
         data->is_defined_ = value.is_defined();
-        data->scalar_.clear();
-        data->sequence_.clear();
-        data->map_.clear();
-        data->cached_int_.reset();
-        data->cached_double_.reset();
-        data->cached_bool_.reset();
+        data->clear_content();
         if (value.is_scalar()) data->scalar_ = value.scalar();
         if (value.is_sequence()) {
             for (size_t i = 0; i < value.size(); ++i)
@@ -284,7 +292,7 @@ template<> struct convert<Node> {
 
 // Copy assignment for Node (must be defined after convert<Node>)
 inline Node& Node::operator=(const Node& other) {
-    convert<Node>::encode(const_cast<Node&>(other), *this);
+    convert<Node>::encode(other, *this);
     return *this;
 }
 
@@ -311,19 +319,14 @@ T Node::as(const T& fallback) const {
 
 template<typename T>
 Node& Node::operator=(const T& value) {
-    convert<T>::encode(const_cast<T&>(value), *this);
+    convert<T>::encode(value, *this);
     return *this;
 }
 
 // Rvalue string overload — moves instead of copying
 inline Node& Node::operator=(std::string&& value) {
     if (!data_) data_ = std::make_shared<node_data>();
-    data_->type_ = NodeType::Scalar;
-    data_->is_defined_ = true;
-    data_->scalar_ = std::move(value);
-    data_->cached_int_.reset();
-    data_->cached_double_.reset();
-    data_->cached_bool_.reset();
+    data_->set_scalar(std::move(value));
     return *this;
 }
 

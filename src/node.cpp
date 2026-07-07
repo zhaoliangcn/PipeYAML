@@ -91,7 +91,7 @@ void Node::push_back(const std::string& value) {
     if (data_->type_ != NodeType::Sequence && data_->type_ != NodeType::Null)
         throw RepresentationException("Cannot push_back on a non-sequence node");
     auto child = std::make_shared<node_data>(NodeType::Scalar);
-    child->scalar_ = value;
+    child->set_scalar(value);
     data_->sequence_push_back(std::move(child));
 }
 
@@ -119,7 +119,7 @@ static std::shared_ptr<node_data> find_map_key(
     // Fallback: linear scan (for maps without index)
     for (const auto& pair : map) {
         if (pair.first && pair.first->type_ == NodeType::Scalar
-            && pair.first->scalar_ == key) {
+            && pair.first->scalar() == key) {
             return pair.second;
         }
     }
@@ -151,7 +151,7 @@ Node Node::operator[](const std::string& key) {
 
     // Create a new key-value pair with undefined value
     auto key_node = std::make_shared<node_data>(NodeType::Scalar);
-    key_node->scalar_ = key;
+    key_node->set_scalar(key);
     auto value_node = std::make_shared<node_data>(NodeType::Null, false);
     data_->map_insert(key_node, value_node);
     return Node(value_node);

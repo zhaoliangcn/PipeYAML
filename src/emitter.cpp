@@ -220,7 +220,7 @@ void Emitter::emit_node_data(const std::shared_ptr<node_data>& data) {
             output(null_format_);
             break;
         case NodeType::Scalar:
-            emit_scalar(data->scalar_);
+            emit_scalar(data->scalar());
             break;
         case NodeType::Sequence:
             {
@@ -311,39 +311,7 @@ void Emitter::emit_sequence(const Node& node) {
 void Emitter::emit_map(const Node& node) {
     auto data = node.get_data();
     if (!data) return;
-    const auto& map_data = data->map();
-
-    for (size_t i = 0; i < map_data.size(); ++i) {
-        const auto& pair = map_data[i];
-
-        output_newline();
-        output_indent();
-
-        // Emit key - access node_data directly to avoid Node overhead
-        if (pair.first && pair.first->type_ == NodeType::Scalar) {
-            emit_scalar(pair.first->scalar());
-        } else {
-            // Complex key - wrap with '?'
-            output("? ");
-            if (pair.first) emit_node_data(pair.first);
-            output_newline();
-            output_indent();
-        }
-
-        output(": ");
-
-        if (pair.second && pair.second->is_defined_) {
-            if (pair.second->type_ == NodeType::Scalar) {
-                emit_scalar(pair.second->scalar());
-            } else if (pair.second->type_ == NodeType::Null) {
-                output(null_format_);
-            } else {
-                increase_indent();
-                emit_node_data(pair.second);
-                decrease_indent();
-            }
-        }
-    }
+    emit_node_data(data);
 }
 
 void Emitter::emit(const Node& node) {

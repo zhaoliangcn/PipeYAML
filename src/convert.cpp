@@ -222,7 +222,7 @@ template<typename T>
 bool convert<std::vector<T>>::encode(const std::vector<T>& value, Node& node) {
     for (const auto& elem : value) {
         Node child;
-        convert<T>::encode(const_cast<T&>(elem), child);
+        convert<T>::encode(elem, child);
         node.push_back(child);
     }
     return true;

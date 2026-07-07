@@ -95,10 +95,19 @@ char Stream::get() {
 }
 
 void Stream::eat(size_t n) {
-    pos_ += n;
-    // Update position tracking approximately
-    mark_.column += static_cast<int>(n);
-    mark_.pos += static_cast<int>(n);
+    for (size_t i = 0; i < n; ++i) {
+        if (pos_ < buffer_.size() && buffer_[pos_] == '\n') {
+            // Handle newline inside eaten range
+            pos_++;
+            mark_.line++;
+            mark_.column = 1;
+            mark_.pos++;
+        } else {
+            pos_++;
+            mark_.column++;
+            mark_.pos++;
+        }
+    }
 }
 
 bool Stream::eof() const {
@@ -119,9 +128,18 @@ std::string_view Stream::current_segment() const {
 }
 
 void Stream::advance(size_t n) {
-    pos_ += n;
-    mark_.column += static_cast<int>(n);
-    mark_.pos += static_cast<int>(n);
+    for (size_t i = 0; i < n; ++i) {
+        if (pos_ < buffer_.size() && buffer_[pos_] == '\n') {
+            pos_++;
+            mark_.line++;
+            mark_.column = 1;
+            mark_.pos++;
+        } else {
+            pos_++;
+            mark_.column++;
+            mark_.pos++;
+        }
+    }
 }
 
 } // namespace YAML

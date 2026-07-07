@@ -39,8 +39,7 @@ Token Parser::expect_token(TokenType type) {
 }
 
 bool Parser::peek_token(TokenType type) const {
-    if (scanner_.token_head_ >= scanner_.tokens_.size()) return false;
-    return scanner_.tokens_[scanner_.token_head_].type == type;
+    return const_cast<Scanner&>(scanner_).peek().type == type;
 }
 
 Token Parser::consume_token() {
@@ -192,9 +191,6 @@ std::shared_ptr<node_data> Parser::parse_node(bool try_map) {
 // ===========================================================================
 std::shared_ptr<node_data> Parser::parse_sequence() {
     auto result = std::make_shared<node_data>(NodeType::Sequence);
-    // Mark the position in the token queue so we can detect when
-    // the sequence ends (next item at same indent)
-    size_t checkpoint = scanner_.tokens_avail();
 
     while (true) {
         // Skip newlines before items
@@ -239,11 +235,6 @@ std::shared_ptr<node_data> Parser::parse_flow_sequence() {
         auto value = parse_node();
         if (value) {
             result->sequence_push_back(value);
-        }
-
-        // Skip commas
-        while (scanner_.tokens_avail() > 0 && scanner_.token_at(0).value == ",") {
-            consume_token();
         }
     }
 
@@ -332,7 +323,7 @@ std::shared_ptr<node_data> Parser::parse_map() {
             auto tok = consume_token();
             register_anchor(tok.value, nullptr);
             key = std::make_shared<node_data>(NodeType::Scalar);
-            key->scalar_ = std::move(tok.value);
+            key->set_scalar(std::move(tok.value));
         } else if (peek_token(TokenType::Alias)) {
             auto tok = consume_token();
             key = resolve_alias(tok.value);
@@ -376,7 +367,7 @@ std::shared_ptr<node_data> Parser::parse_map() {
             } else {
                 // Single scalar at deeper indent = value
                 if (peek_token(TokenType::Scalar)) {
-                    value = std::make_shared<node_data>(NodeType::Null, true);
+                    value = parse_scalar(consume_token());
                 } else {
                     value = std::make_shared<node_data>(NodeType::Null, true);
                 }
@@ -406,7 +397,7 @@ std::shared_ptr<node_data> Parser::parse_scalar(Token token) {
         return result;
     }
     auto result = std::make_shared<node_data>(NodeType::Scalar);
-    result->scalar_ = std::move(token.value);
+    result->set_scalar(std::move(token.value));
     return result;
 }
 

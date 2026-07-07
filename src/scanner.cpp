@@ -21,7 +21,12 @@ Scanner::Scanner(Stream& stream)
 const Token& Scanner::peek() {
     ensure_tokens_in_queue();
     if (token_head_ >= tokens_.size()) {
-        static Token eos(TokenType::EndOfStream, stream_.get_mark());
+        // thread_local avoids cross-instance/thread sharing; update mark each call
+        thread_local Token eos;
+        eos.type = TokenType::EndOfStream;
+        eos.mark = stream_.get_mark();
+        eos.value.clear();
+        eos.indent = -1;
         return eos;
     }
     return tokens_[token_head_];
@@ -132,7 +137,7 @@ void Scanner::scan_next_token() {
                 if (next == ' ' || next == '\n' || next == '\t' || next == '\0' || next == ','
                     || next == ']' || next == '}' || next == '#') {
                     stream_.get();
-                    push_token(TokenType::Key, stream_.get_mark());
+                    push_token(TokenType::Key, stream_.get_mark());  // mark after ':': points to first char of value
                 } else {
                     scan_scalar();
                 }
@@ -219,7 +224,7 @@ void Scanner::scan_newline() {
 // Block sequence entry '-'
 // ===========================================================================
 void Scanner::scan_block_sequence_entry() {
-    auto mark = stream_.get_mark();
+    auto mark = stream_.get_mark();    // mark before '-': points to '-' itself
     stream_.get(); // consume '-'
     push_token(TokenType::BlockSequenceStart, mark);
 }
