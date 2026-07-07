@@ -397,6 +397,14 @@ std::shared_ptr<node_data> Parser::parse_map() {
 // Scalar
 // ===========================================================================
 std::shared_ptr<node_data> Parser::parse_scalar(Token token) {
+    // YAML 1.2 null keywords: null, Null, NULL, ~, empty
+    if (token.value.empty()
+        || token.value == "null" || token.value == "Null" || token.value == "NULL"
+        || token.value == "~") {
+        auto result = std::make_shared<node_data>(NodeType::Null);
+        result->is_defined_ = true;
+        return result;
+    }
     auto result = std::make_shared<node_data>(NodeType::Scalar);
     result->scalar_ = std::move(token.value);
     return result;

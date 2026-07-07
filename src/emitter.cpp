@@ -119,6 +119,11 @@ bool Emitter::needs_quotes(const std::string& value) const {
         || first == '%' || first == '@' || first == '`')
         return true;
 
+    // Dash/colon followed by space/tab indicates block sequence/map indicator
+    if ((first == '-' || first == ':')
+        && (value.size() == 1 || value[1] == ' ' || value[1] == '\t'))
+        return true;
+
     // Check special prefixes
     if (value.size() >= 3 && value[0] == '-' && value[1] == '-' && value[2] == '-')
         return true;
@@ -261,8 +266,10 @@ void Emitter::emit_node_data(const std::shared_ptr<node_data>& data) {
                     output(": ");
 
                     if (pair.second && pair.second->is_defined_) {
-                        if (pair.second->type_ == NodeType::Scalar || pair.second->type_ == NodeType::Null) {
+                        if (pair.second->type_ == NodeType::Scalar) {
                             emit_scalar(pair.second->scalar());
+                        } else if (pair.second->type_ == NodeType::Null) {
+                            output(null_format_);
                         } else {
                             increase_indent();
                             emit_node_data(pair.second);
@@ -326,8 +333,10 @@ void Emitter::emit_map(const Node& node) {
         output(": ");
 
         if (pair.second && pair.second->is_defined_) {
-            if (pair.second->type_ == NodeType::Scalar || pair.second->type_ == NodeType::Null) {
+            if (pair.second->type_ == NodeType::Scalar) {
                 emit_scalar(pair.second->scalar());
+            } else if (pair.second->type_ == NodeType::Null) {
+                output(null_format_);
             } else {
                 increase_indent();
                 emit_node_data(pair.second);

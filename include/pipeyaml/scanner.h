@@ -87,7 +87,7 @@ public:
 
     // Look-ahead: check if next token (without consuming) is available
     bool has_next() { ensure_more_tokens(); return token_head_ + 1 < tokens_.size(); }
-    TokenType peek_next_type() { has_next(); return tokens_[token_head_ + 1].type; }
+    TokenType peek_next_type() { return has_next() ? tokens_[token_head_ + 1].type : TokenType::EndOfStream; }
 
 private:
     friend class Parser;

@@ -103,4 +103,57 @@ TEST_CASE("Roundtrip - LoadFile API", "integration", "core") {
     std::remove(path.c_str());
 }
 
+// Regression: needs_quotes must quote scalars starting with "- " or ": "
+TEST_CASE("Roundtrip - scalar starting with dash-space", "integration", "regression") {
+    Node root(NodeType::Map);
+    root["indicator"] = std::string("- foo");
+    root["colon"] = std::string(": bar");
+    root["lone_dash"] = std::string("-");
+    root["lone_colon"] = std::string(":");
+
+    std::string out = Dump(root);
+    // Reload and verify values preserved
+    Node reloaded = Load(out);
+    CHECK_EQ(reloaded["indicator"].scalar(), "- foo");
+    CHECK_EQ(reloaded["colon"].scalar(), ": bar");
+    CHECK_EQ(reloaded["lone_dash"].scalar(), "-");
+    CHECK_EQ(reloaded["lone_colon"].scalar(), ":");
+}
+
+// Regression: null map values must emit as null format, not ""
+TEST_CASE("Roundtrip - null map value emits null format", "integration", "regression") {
+    // Use Load to create a true Null-typed node (operator= with empty
+    // string is defined as Scalar, not Null, by design).
+    Node root = Load("present: value\nabsent: null\n");
+    CHECK(root["absent"].is_null());
+
+    std::string out = Dump(root);
+    CHECK(out.find("null") != std::string::npos);
+    CHECK(out.find("\"\"") == std::string::npos);
+
+    // Reload: null should remain null, not empty string
+    Node reloaded = Load(out);
+    CHECK(reloaded["absent"].is_null());
+}
+
+// Regression: copy assignment must clear stale conversion caches
+TEST_CASE("Roundtrip - copy assignment clears caches", "integration", "regression") {
+    Node a;
+    a = 42;  // sets cached_int_ = 42
+    CHECK_EQ(a.as<int>(), 42);
+
+    Node b;
+    b = std::string("hello");
+    a = b;  // copy assign: cache must be cleared
+    CHECK_EQ(a.scalar(), "hello");
+    // as<int>() should now fail to parse "hello", not return stale 42
+    bool threw = false;
+    try {
+        (void)a.as<int>();
+    } catch (...) {
+        threw = true;
+    }
+    CHECK(threw);
+}
+
 TINY_TEST_MAIN();

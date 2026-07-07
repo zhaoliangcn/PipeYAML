@@ -266,6 +266,9 @@ template<> struct convert<Node> {
         data->scalar_.clear();
         data->sequence_.clear();
         data->map_.clear();
+        data->cached_int_.reset();
+        data->cached_double_.reset();
+        data->cached_bool_.reset();
         if (value.is_scalar()) data->scalar_ = value.scalar();
         if (value.is_sequence()) {
             for (size_t i = 0; i < value.size(); ++i)
