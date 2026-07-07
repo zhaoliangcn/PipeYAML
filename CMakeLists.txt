@@ -24,7 +24,7 @@ target_compile_features(pipeyaml PUBLIC cxx_std_17)
 # =============================================================================
 # tinyTest integration (header-only, no install needed)
 # =============================================================================
-set(TINYTEST_DIR "/home/zhaoliang/tinyTest" CACHE PATH "Path to tinyTest")
+set(TINYTEST_DIR "" CACHE PATH "Path to tinyTest (e.g. /path/to/tinyTest)")
 if(EXISTS "${TINYTEST_DIR}")
     add_subdirectory("${TINYTEST_DIR}" "${CMAKE_BINARY_DIR}/tinyTest")
 endif()
@@ -67,7 +67,7 @@ install(EXPORT PipeYAMLTargets
 # Benchmarks (Google Benchmark)
 # =============================================================================
 set(YAML_CPP_DIR "" CACHE PATH "Path to yaml-cpp root (set to enable yaml-cpp comparison)")
-set(BENCHMARK_DIR "/home/zhaoliang/leveldb/third_party/benchmark" CACHE PATH "Path to Google Benchmark")
+set(BENCHMARK_DIR "" CACHE PATH "Path to Google Benchmark (e.g. /path/to/benchmark)")
 option(PYPEYAML_BUILD_BENCHMARKS "Build benchmarks" ON)
 if(PYPEYAML_BUILD_BENCHMARKS)
     if(EXISTS "${BENCHMARK_DIR}/build/src/libbenchmark.a")
