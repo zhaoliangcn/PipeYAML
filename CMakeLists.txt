@@ -24,8 +24,9 @@ target_compile_features(pipeyaml PUBLIC cxx_std_17)
 # =============================================================================
 # tinyTest integration (header-only, no install needed)
 # =============================================================================
-if(EXISTS /home/zhaoliang/tinyTest)
-    add_subdirectory(/home/zhaoliang/tinyTest ${CMAKE_BINARY_DIR}/tinyTest)
+set(TINYTEST_DIR "/home/zhaoliang/tinyTest" CACHE PATH "Path to tinyTest")
+if(EXISTS "${TINYTEST_DIR}")
+    add_subdirectory("${TINYTEST_DIR}" "${CMAKE_BINARY_DIR}/tinyTest")
 endif()
 
 # =============================================================================
@@ -65,29 +66,67 @@ install(EXPORT PipeYAMLTargets
 # =============================================================================
 # Benchmarks (Google Benchmark)
 # =============================================================================
+set(YAML_CPP_DIR "" CACHE PATH "Path to yaml-cpp root (set to enable yaml-cpp comparison)")
+set(BENCHMARK_DIR "/home/zhaoliang/leveldb/third_party/benchmark" CACHE PATH "Path to Google Benchmark")
 option(PYPEYAML_BUILD_BENCHMARKS "Build benchmarks" ON)
 if(PYPEYAML_BUILD_BENCHMARKS)
-    set(BENCHMARK_DIR /home/zhaoliang/leveldb/third_party/benchmark)
-    if(EXISTS ${BENCHMARK_DIR}/build/src/libbenchmark.a)
+    if(EXISTS "${BENCHMARK_DIR}/build/src/libbenchmark.a")
+        # PipeYAML benchmark
         add_executable(bench_parse
             benchmarks/bench_parse.cpp
             benchmarks/bench_data.h
         )
         target_include_directories(bench_parse PRIVATE
-            ${BENCHMARK_DIR}/include
-            ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks
+            "${BENCHMARK_DIR}/include"
+            "${CMAKE_CURRENT_SOURCE_DIR}/benchmarks"
         )
         target_link_libraries(bench_parse PRIVATE
             pipeyaml
-            ${BENCHMARK_DIR}/build/src/libbenchmark.a
-            ${BENCHMARK_DIR}/build/src/libbenchmark_main.a
+            "${BENCHMARK_DIR}/build/src/libbenchmark.a"
+            "${BENCHMARK_DIR}/build/src/libbenchmark_main.a"
             pthread
             rt
         )
+
+        # yaml-cpp comparison benchmark
+        if(NOT "${YAML_CPP_DIR}" STREQUAL "")
+            set(YAML_CPP_INCLUDE_DIR "${YAML_CPP_DIR}/include")
+            # Try shared library first, then static
+            if(EXISTS "${YAML_CPP_DIR}/build/libyaml-cpp.a")
+                set(YAML_CPP_LIB "${YAML_CPP_DIR}/build/libyaml-cpp.a")
+            elseif(EXISTS "${YAML_CPP_DIR}/lib/libyaml-cpp.so")
+                set(YAML_CPP_LIB "${YAML_CPP_DIR}/lib/libyaml-cpp.so")
+            endif()
+        endif()
+        if(DEFINED YAML_CPP_LIB AND EXISTS "${YAML_CPP_INCLUDE_DIR}/yaml-cpp/yaml.h" AND EXISTS "${YAML_CPP_LIB}")
+            add_executable(bench_yamlcpp
+                benchmarks/bench_yamlcpp.cpp
+                benchmarks/bench_data.h
+            )
+            target_include_directories(bench_yamlcpp PRIVATE
+                "${BENCHMARK_DIR}/include"
+                "${YAML_CPP_INCLUDE_DIR}"
+                "${CMAKE_CURRENT_SOURCE_DIR}/benchmarks"
+            )
+            target_link_libraries(bench_yamlcpp PRIVATE
+                "${YAML_CPP_LIB}"
+                "${BENCHMARK_DIR}/build/src/libbenchmark.a"
+                "${BENCHMARK_DIR}/build/src/libbenchmark_main.a"
+                pthread
+                rt
+            )
+
+            add_custom_target(bench_compare
+                COMMAND echo "=== PipeYAML ===" && ./bench_parse && echo "=== yaml-cpp ===" && ./bench_yamlcpp
+                DEPENDS bench_parse bench_yamlcpp
+                WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+            )
+        endif()
+
         add_custom_target(benchmark
             COMMAND bench_parse
             DEPENDS bench_parse
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+            WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
         )
     endif()
 endif()

@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compiler: [g++, clang++]
+        build_type: [Debug, Release]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq cmake g++ clang
+
+    - name: Configure
+      run: |
+        cmake -B build \
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+          -DCMAKE_CXX_COMPILER=${{ matrix.compiler }} \
+          -DPYPEYAML_BUILD_TESTS=OFF
+
+    - name: Build
+      run: cmake --build build -j$(nproc)
+
+    - name: Unit tests (with tinyTest)
+      if: false  # tinyTest is external; skip for public CI
+      run: |
+        cmake -B build -DPYPEYAML_BUILD_TESTS=ON
+        cmake --build build -j$(nproc)
+        cd build && ctest --output-on-failure
