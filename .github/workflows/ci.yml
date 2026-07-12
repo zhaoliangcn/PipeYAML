@@ -27,14 +27,10 @@ jobs:
         cmake -B build \
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
           -DCMAKE_CXX_COMPILER=${{ matrix.compiler }} \
-          -DPYPEYAML_BUILD_TESTS=OFF
+          -DPYPEYAML_BUILD_TESTS=ON
 
     - name: Build
       run: cmake --build build -j$(nproc)
 
-    - name: Unit tests (with tinyTest)
-      if: false  # tinyTest is external; skip for public CI
-      run: |
-        cmake -B build -DPYPEYAML_BUILD_TESTS=ON
-        cmake --build build -j$(nproc)
-        cd build && ctest --output-on-failure
+    - name: Run tests
+      run: cd build && ctest --output-on-failure -j$(nproc)

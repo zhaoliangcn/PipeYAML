@@ -150,6 +150,9 @@ private:
     bool started_ = false;
     bool ended_ = false;
     int doc_count_ = 0;
+
+    // End-of-stream sentinel token (replaces thread_local static)
+    Token eos_token_;
 };
 
 } // namespace YAML

@@ -61,6 +61,9 @@ static void BM_LoadFile_Small(benchmark::State& state) {
         auto doc = YAML::LoadFile(std::string("/tmp/bench_small.yaml"));
         benchmark::DoNotOptimize(doc);
     }
+    if (state.thread_index() == 0) {
+        std::remove("/tmp/bench_small.yaml");
+    }
 }
 BENCHMARK(BM_LoadFile_Small);
 

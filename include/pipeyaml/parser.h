@@ -38,7 +38,7 @@ private:
 
     // Consume helpers
     Token expect_token(TokenType type);
-    bool peek_token(TokenType type) const;
+    bool peek_token(TokenType type);
     Token consume_token();
 
     // Anchors & aliases

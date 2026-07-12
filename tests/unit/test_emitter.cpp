@@ -84,4 +84,36 @@ TEST_CASE("Emitter - sequence via manipulators", "emitter", "core") {
     CHECK(result.find("- three") != std::string::npos);
 }
 
+TEST_CASE("Emitter - flow sequence output", "emitter", "core") {
+    Node seq(NodeType::Sequence);
+    seq.push_back(Node(NodeType::Scalar));
+    seq[0].set_scalar("a");
+    seq.push_back(Node(NodeType::Scalar));
+    seq[1].set_scalar("b");
+
+    // Default block-style output
+    std::string result = Dump(seq);
+    CHECK(result.find("- a") != std::string::npos);
+    CHECK(result.find("- b") != std::string::npos);
+}
+
+TEST_CASE("Emitter - empty sequence", "emitter", "edge") {
+    Node seq(NodeType::Sequence);
+    std::string result = Dump(seq);
+    // Should not crash and produce valid output
+    CHECK_FALSE(result.empty());
+}
+
+TEST_CASE("Emitter - map with various value types", "emitter", "core") {
+    Node map(NodeType::Map);
+    map["string"] = std::string("text");
+    map["int_val"] = std::string("42");
+    map["bool_val"] = std::string("true");
+
+    std::string result = Dump(map);
+    CHECK(result.find("string:") != std::string::npos);
+    CHECK(result.find("int_val:") != std::string::npos);
+    CHECK(result.find("bool_val:") != std::string::npos);
+}
+
 TINY_TEST_MAIN();

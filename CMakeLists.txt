@@ -27,6 +27,16 @@ target_compile_features(pipeyaml PUBLIC cxx_std_17)
 set(TINYTEST_DIR "" CACHE PATH "Path to tinyTest (e.g. /path/to/tinyTest)")
 if(EXISTS "${TINYTEST_DIR}")
     add_subdirectory("${TINYTEST_DIR}" "${CMAKE_BINARY_DIR}/tinyTest")
+else()
+    # Auto-fetch tinyTest from GitHub when no local path is given
+    include(FetchContent)
+    FetchContent_Declare(
+        tinyTest
+        GIT_REPOSITORY https://github.com/zhaoliangcn/tinyTest.git
+        GIT_TAG        main
+    )
+    set(TINYTEST_SKIP_INSTALL ON CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(tinyTest)
 endif()
 
 # =============================================================================

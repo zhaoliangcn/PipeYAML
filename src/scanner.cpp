@@ -1,6 +1,7 @@
 #include "pipeyaml/scanner.h"
 
 #include <cctype>
+#include <cstdlib>
 #include <sstream>
 
 namespace YAML {
@@ -21,13 +22,11 @@ Scanner::Scanner(Stream& stream)
 const Token& Scanner::peek() {
     ensure_tokens_in_queue();
     if (token_head_ >= tokens_.size()) {
-        // thread_local avoids cross-instance/thread sharing; update mark each call
-        thread_local Token eos;
-        eos.type = TokenType::EndOfStream;
-        eos.mark = stream_.get_mark();
-        eos.value.clear();
-        eos.indent = -1;
-        return eos;
+        eos_token_.type = TokenType::EndOfStream;
+        eos_token_.mark = stream_.get_mark();
+        eos_token_.value.clear();
+        eos_token_.indent = -1;
+        return eos_token_;
     }
     return tokens_[token_head_];
 }

@@ -38,8 +38,8 @@ Token Parser::expect_token(TokenType type) {
     return scanner_.pop();
 }
 
-bool Parser::peek_token(TokenType type) const {
-    return const_cast<Scanner&>(scanner_).peek().type == type;
+bool Parser::peek_token(TokenType type) {
+    return scanner_.peek().type == type;
 }
 
 Token Parser::consume_token() {
@@ -229,7 +229,7 @@ std::shared_ptr<node_data> Parser::parse_flow_sequence() {
         // Skip commas and whitespace
         while (peek_token(TokenType::Newline)) consume_token();
         const Token& t = scanner_.peek();
-        if (t.type == TokenType::FlowSequenceEnd) break;
+        if (t.type == TokenType::FlowSequenceEnd || t.type == TokenType::EndOfStream) break;
 
         // Parse element
         auto value = parse_node();
@@ -238,6 +238,10 @@ std::shared_ptr<node_data> Parser::parse_flow_sequence() {
         }
     }
 
+    // If we hit end-of-stream without finding the closing bracket, throw
+    if (peek_token(TokenType::EndOfStream)) {
+        throw ParserException("Unterminated flow sequence");
+    }
     expect_token(TokenType::FlowSequenceEnd);
     return result;
 }
@@ -252,9 +256,12 @@ std::shared_ptr<node_data> Parser::parse_flow_map() {
     while (!peek_token(TokenType::FlowMapEnd)) {
         while (peek_token(TokenType::Newline)) consume_token();
         if (peek_token(TokenType::FlowMapEnd)) break;
+        if (peek_token(TokenType::EndOfStream)) {
+            throw ParserException("Unterminated flow mapping");
+        }
 
-        // Parse key
-        auto key = parse_node();
+        // Parse key (false = don't try block map; we're in a flow context)
+        auto key = parse_node(false);
 
         // Expect ':'
         if (!peek_token(TokenType::Key)) {
@@ -262,15 +269,17 @@ std::shared_ptr<node_data> Parser::parse_flow_map() {
         }
         consume_token();
 
-        // Parse value
-        auto value = parse_node();
+        // Parse value (also flow context)
+        auto value = parse_node(false);
 
         result->map_insert(std::move(key), std::move(value));
 
-        // Skip commas
-        while (scanner_.tokens_avail() > 0 && scanner_.token_at(0).value == ",") {
-            consume_token();
-        }
+        // Commas are already consumed by the Scanner, no need to skip them here
+    }
+
+    // If we hit end-of-stream without finding the closing brace, throw
+    if (peek_token(TokenType::EndOfStream)) {
+        throw ParserException("Unterminated flow mapping");
     }
 
     expect_token(TokenType::FlowMapEnd);
@@ -321,9 +330,10 @@ std::shared_ptr<node_data> Parser::parse_map() {
             key = parse_scalar(consume_token());
         } else if (peek_token(TokenType::Anchor)) {
             auto tok = consume_token();
-            register_anchor(tok.value, nullptr);
+            std::string anchor_id = tok.value;  // copy before move
             key = std::make_shared<node_data>(NodeType::Scalar);
             key->set_scalar(std::move(tok.value));
+            register_anchor(anchor_id, key);  // register with the actual key node
         } else if (peek_token(TokenType::Alias)) {
             auto tok = consume_token();
             key = resolve_alias(tok.value);

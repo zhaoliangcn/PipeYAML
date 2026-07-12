@@ -100,4 +100,43 @@ TEST_CASE("Parser - anchor and alias", "parser", "core") {
     CHECK(node["server"].is_map());
 }
 
+TEST_CASE("Parser - flow sequence", "parser", "core") {
+    Node node = parse_string("[one, two, three]");
+    CHECK(node.is_sequence());
+    CHECK_EQ(node.size(), 3);
+    CHECK_EQ(node[0].scalar(), "one");
+    CHECK_EQ(node[1].scalar(), "two");
+    CHECK_EQ(node[2].scalar(), "three");
+}
+
+TEST_CASE("Parser - flow map", "parser", "core") {
+    Node node = parse_string("{name: PipeYAML, version: 0.1}");
+    CHECK(node.is_map());
+    CHECK_EQ(node.size(), 2);
+    CHECK_EQ(node["name"].scalar(), "PipeYAML");
+    CHECK_EQ(node["version"].scalar(), "0.1");
+}
+
+TEST_CASE("Parser - escape sequences in double-quoted strings", "parser", "core") {
+    Node node = parse_string("\"line1\\nline2\\ttab\\\\backslash\"");
+    CHECK(node.is_scalar());
+    CHECK_EQ(node.scalar(), "line1\nline2\ttab\\backslash");
+}
+
+TEST_CASE("Parser - deeply nested map", "parser", "edge") {
+    Node node = parse_string("a:\n  b:\n    c:\n      d:\n        e: deep");
+    CHECK(node.is_map());
+    CHECK_EQ(node["a"]["b"]["c"]["d"]["e"].scalar(), "deep");
+}
+
+TEST_CASE("Parser - malformed YAML throws exception", "parser", "edge") {
+    bool threw = false;
+    try {
+        parse_string("unclosed: [list");
+    } catch (const Exception&) {
+        threw = true;
+    }
+    CHECK(threw);
+}
+
 TINY_TEST_MAIN();
